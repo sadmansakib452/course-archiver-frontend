@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { SplashProvider } from "@/providers/SplashProvider";
 import "jsvectormap/dist/jsvectormap.css";
 import "flatpickr/dist/flatpickr.min.css";
 import "@/css/satoshi.css";
@@ -17,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning={true}>
-        {children}
+        <SplashProvider>
+          {children}
+        </SplashProvider>
       </body>
     </html>
   );
