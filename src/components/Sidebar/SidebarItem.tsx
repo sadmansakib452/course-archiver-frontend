@@ -1,42 +1,70 @@
 import React from "react";
 import Link from "next/link";
-import SidebarDropdown from "@/components/Sidebar/SidebarDropdown";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { SidebarItemProps } from "@/types/sidebar.types";
+import SidebarDropdown from "./SidebarDropdown";
 
-const SidebarItem = ({ item, pageName, setPageName }: any) => {
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  item,
+  pageName,
+  setPageName,
+  level = 0,
+}) => {
+  const pathname = usePathname();
+  const { user } = useAuth();
+
+  // Check permission
+  if (item.permission && (!user || !item.permission.includes(user.role))) {
+    return null;
+  }
+
   const handleClick = () => {
     const updatedPageName =
       pageName !== item.label.toLowerCase() ? item.label.toLowerCase() : "";
-    return setPageName(updatedPageName);
+    setPageName(updatedPageName);
   };
 
-  const pathname = usePathname();
-
-  const isActive = (item: any) => {
-    if (item.route === pathname) return true;
-    if (item.children) {
-      return item.children.some((child: any) => isActive(child));
+  const isActive = (route: string): boolean => {
+    if (route === "/dashboard") {
+      return pathname === route;
     }
-    return false;
+    return pathname.startsWith(route);
   };
 
-  const isItemActive = isActive(item);
+  const itemActive = isActive(item.route);
 
   return (
-    <>
-      <li>
-        <Link
-          href={item.route}
-          onClick={handleClick}
-          className={`${isItemActive ? "bg-graydark dark:bg-meta-4" : ""} group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4`}
-        >
-          {item.icon}
-          {item.label}
-          {item.children && (
+    <li>
+      <Link
+        href={item.route}
+        onClick={handleClick}
+        className={`group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4
+          ${itemActive ? "bg-graydark dark:bg-meta-4" : ""}
+          ${level > 0 ? "pl-6" : ""}
+        `}
+      >
+        {React.createElement(item.icon, {
+          className: "w-5 h-5",
+        })}
+        <span>{item.label}</span>
+
+        {item.badge && (
+          <span
+            className={`absolute right-4 top-1/2 -translate-y-1/2 rounded bg-${item.badge.variant} px-2 py-1 text-xs font-medium text-white`}
+          >
+            {item.badge.text}
+          </span>
+        )}
+
+        {item.children && (
+          <span
+            className={`absolute right-4 top-1/2 -translate-y-1/2 ${
+              pageName === item.label.toLowerCase() ? "rotate-180" : ""
+            } transition-transform duration-200`}
+          >
             <svg
-              className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                pageName === item.label.toLowerCase() && "rotate-180"
-              }`}
+              className="fill-current"
               width="20"
               height="20"
               viewBox="0 0 20 20"
@@ -50,20 +78,23 @@ const SidebarItem = ({ item, pageName, setPageName }: any) => {
                 fill=""
               />
             </svg>
-          )}
-        </Link>
-
-        {item.children && (
-          <div
-            className={`translate transform overflow-hidden ${
-              pageName !== item.label.toLowerCase() && "hidden"
-            }`}
-          >
-            <SidebarDropdown item={item.children} />
-          </div>
+          </span>
         )}
-      </li>
-    </>
+      </Link>
+
+      {item.children && (
+        <div
+          className={`transform overflow-hidden transition-all duration-300 ${
+            pageName === item.label.toLowerCase() ? "block" : "hidden"
+          }`}
+        >
+          <SidebarDropdown
+            items={item.children}
+            className="mt-4 flex flex-col gap-2.5 pl-6"
+          />
+        </div>
+      )}
+    </li>
   );
 };
 

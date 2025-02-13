@@ -1,18 +1,19 @@
 export const API_CONFIG = {
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+  baseURL: `${process.env.NEXT_PUBLIC_APP_URL}/api`,
   endpoints: {
     auth: {
       login: '/auth/login',
       refresh: '/auth/refresh',
       logout: '/auth/logout'
     },
-    user: {
-      profile: '/users/profile'
+    admin: {
+      create: '/super-admin/admins',
+      list: '/super-admin/admins'
     }
   },
   cookieNames: {
-    auth: 'auth_token',
-    refresh: 'refresh_token'
+    auth: process.env.AUTH_COOKIE_NAME || 'auth_token',
+    refresh: process.env.REFRESH_COOKIE_NAME || 'refresh_token'
   },
   expiry: {
     auth: 7200, // 2 hours in seconds
@@ -33,4 +34,15 @@ export const AUTH_CONFIG = {
     auth: parseInt(process.env.AUTH_TOKEN_EXPIRY || '7200'),
     refresh: parseInt(process.env.REFRESH_TOKEN_EXPIRY || '604800')
   }
-}; 
+};
+
+export const API_ROUTES = {
+  AUTH: {
+    SIGNIN: "/auth/signin",
+    SIGNUP: "/auth/signup",
+  },
+  ADMIN: {
+    CREATE: "/super-admin/admins",
+    LIST: "/super-admin/admins",
+  },
+} as const; 
