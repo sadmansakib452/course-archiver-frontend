@@ -41,19 +41,31 @@ class ApiService {
       (response) => {
         console.log('ApiService: Response received', {
           url: response.config.url,
-          status: response.status
+          status: response.status,
+          data: response.data
         });
         return response;
       },
-      async (error) => {
-        console.error('ApiService: Request failed', error);
+      async (error: AxiosError) => {
+        console.error('ApiService: Request failed', {
+          url: error.config?.url,
+          status: error.response?.status,
+          data: error.response?.data
+        });
         
-        // Handle 401 errors
         if (error.response?.status === 401) {
           const authStore = useAuthStore.getState();
           authStore.clearAuth();
         }
         
+        // Enhanced error handling for wrapped responses
+        if (error.response?.data) {
+          const errorData = error.response.data as ApiResponse<any>;
+          if (!errorData.success) {
+            throw new Error(errorData.message || 'Request failed');
+          }
+          throw error.response.data;
+        }
         throw error;
       }
     );

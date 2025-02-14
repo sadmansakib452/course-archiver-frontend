@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
+  department?: string;
 }
 
 export interface AuthResponse {
@@ -12,6 +13,14 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number; // 900 seconds (15 minutes)
+}
+
+// Backend API response wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  timestamp: string;
 }
 
 export interface LoginRequest {
@@ -28,6 +37,8 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  department?: string;
+  designation?: string;
 }
 
 export interface RegisterResponse {

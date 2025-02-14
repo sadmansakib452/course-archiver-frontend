@@ -1,6 +1,12 @@
 import { apiService } from './api.service';
 import { sessionManager } from './session.service';
-import { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types/auth.types';
+import { 
+  LoginRequest, 
+  RegisterRequest, 
+  AuthResponse, 
+  User,
+  ApiResponse 
+} from '@/types/auth.types';
 import { API_CONFIG } from '@/config/api.config';
 import { AUTH_MESSAGES } from '@/constants/auth.constants';
 import Cookies from 'js-cookie';
@@ -17,30 +23,48 @@ export const authService = {
     try {
       console.log('AuthService: Attempting login...', { email: credentials.email });
       
-      const response = await apiService.post<AuthResponse>(
+      const response = await apiService.post<ApiResponse<AuthResponse>>(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
 
       console.log('AuthService: Login response:', response.data);
 
-      if (!response.data || !response.data.accessToken) {
-        console.error('AuthService: Invalid login response format');
+      if (!response.data.success || !response.data.data) {
+        console.error('AuthService: Invalid login response format', response.data);
+        throw new Error(response.data.message || AUTH_MESSAGES.LOGIN_FAILED);
+      }
+
+      const authData = response.data.data;
+
+      if (!authData.accessToken || !authData.user) {
+        console.error('AuthService: Missing required auth data', authData);
         throw new Error(AUTH_MESSAGES.LOGIN_FAILED);
       }
 
-      // Store token in cookie
-      Cookies.set(API_CONFIG.cookieNames.auth, response.data.accessToken, {
-        expires: API_CONFIG.expiry.auth / (24 * 60 * 60),
+      // Store tokens
+      Cookies.set(API_CONFIG.cookieNames.auth, authData.accessToken, {
+        expires: authData.expiresIn / (24 * 60 * 60),
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/'
       });
 
-      return response.data;
+      if (authData.refreshToken) {
+        Cookies.set(API_CONFIG.cookieNames.refresh, authData.refreshToken, {
+          expires: API_CONFIG.expiry.refresh / (24 * 60 * 60),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        });
+      }
+
+      return authData;
     } catch (error: any) {
-      console.error('AuthService: Login failed:', error);
-      // Pass through the exact error message
+      console.error('AuthService: Login failed:', error.response || error);
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
       throw error;
     }
   },
