@@ -10,6 +10,8 @@ import {
 import { API_CONFIG } from '@/config/api.config';
 import { AUTH_MESSAGES } from '@/constants/auth.constants';
 import Cookies from 'js-cookie';
+import { axiosInstance } from '@/lib/axios';
+import { tokenStorage } from '@/utils/storage.utils';
 
 const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
@@ -115,17 +117,15 @@ export const authService = {
     }
   },
 
-  getProfile: async (): Promise<User> => {
+  getProfile: async (): Promise<User | null> => {
     try {
-      const response = await apiService.get<User>(
-        API_CONFIG.endpoints.user.profile
+      const response = await axiosInstance.get<ApiResponse<User>>(
+        API_CONFIG.endpoints.users.profile
       );
-      return response.data;
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        throw new Error(AUTH_MESSAGES.SESSION_EXPIRED);
-      }
-      throw error;
+      return response.data?.data || null;
+    } catch (error) {
+      console.error('Failed to get profile:', error);
+      return null;
     }
   }
 }; 

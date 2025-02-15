@@ -23,12 +23,16 @@ class TokenStorage {
     return Cookies.get(AUTH_CONFIG.cookieNames.refresh);
   }
 
-  setTokens(accessToken: string, refreshToken: string): void {
-    Cookies.set(AUTH_CONFIG.cookieNames.auth, accessToken, {
+  setAuthToken(token: string): void {
+    Cookies.set(AUTH_CONFIG.cookieNames.auth, token, {
       ...defaultOptions,
-      expires: AUTH_CONFIG.expiry.auth / (24 * 60 * 60)
+      expires: AUTH_CONFIG.expiry.auth / (24 * 60 * 60),
+      sameSite: 'lax' // Changed for better compatibility
     });
+  }
 
+  setTokens(accessToken: string, refreshToken: string): void {
+    this.setAuthToken(accessToken);
     Cookies.set(AUTH_CONFIG.cookieNames.refresh, refreshToken, {
       ...defaultOptions,
       expires: AUTH_CONFIG.expiry.refresh / (24 * 60 * 60)
@@ -41,4 +45,5 @@ class TokenStorage {
   }
 }
 
+// Export a single instance
 export const tokenStorage = new TokenStorage(); 

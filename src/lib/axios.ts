@@ -1,5 +1,8 @@
+"use client";
 import axios from "axios";
 import { API_CONFIG } from "@/config/api.config";
+import { tokenStorage } from "@/utils/storage.utils";
+import { useRouter } from "next/navigation";
 
 // Create axios instance with proper baseURL
 export const axiosInstance = axios.create({
@@ -10,15 +13,10 @@ export const axiosInstance = axios.create({
   },
 });
 
-// Add request interceptor to add auth token
+// Add request interceptor for auth token
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from cookies instead of localStorage for SSR compatibility
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(API_CONFIG.cookieNames.auth))
-      ?.split("=")[1];
-
+    const token = tokenStorage.getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,14 +27,17 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle errors
+// Add response interceptor for error handling
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      document.cookie = `${API_CONFIG.cookieNames.auth}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      window.location.href = "/auth/signin";
+      // Handle token expiration
+      tokenStorage.clearTokens();
+      // Use Next.js router instead of window.location
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/signin';
+      }
     }
     return Promise.reject(error);
   }

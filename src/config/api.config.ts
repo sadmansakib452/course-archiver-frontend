@@ -6,9 +6,21 @@ export const API_CONFIG = {
       refresh: '/auth/refresh',
       logout: '/auth/logout'
     },
+    users: {
+      all: '/users/all',
+      profile: '/users/profile',
+      delete: (id: string) => `/users/${id}`,
+      permanentDelete: (id: string) => `/users/${id}/permanent`,
+      status: (id: string) => `/users/${id}/status`,
+      restore: (id: string) => `/users/${id}/restore`
+    },
     admin: {
       create: '/super-admin/admins',
-      list: '/super-admin/admins'
+      list: '/super-admin/admins',
+      faculty: {
+        create: '/admin/faculty',
+        list: '/admin/faculty'
+      }
     }
   },
   cookieNames: {
@@ -45,4 +57,11 @@ export const API_ROUTES = {
     CREATE: "/super-admin/admins",
     LIST: "/super-admin/admins",
   },
-} as const; 
+} as const;
+
+export const ROUTES = {
+  DASHBOARD: {
+    FACULTY: '/dashboard/faculty',
+    FACULTY_ADD: '/dashboard/faculty/add'
+  }
+}; 

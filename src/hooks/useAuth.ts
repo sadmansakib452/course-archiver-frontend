@@ -1,24 +1,29 @@
 "use client";
-import { useCallback } from 'react';
+import { useEffect } from 'react';
 import { useAuthStore } from '@/store';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/constants/routes.constants';
 import type { RegisterRequest } from '@/types/auth.types';
 
-export function useAuth() {
+export const useAuth = () => {
   const router = useRouter();
   const { 
-    user, 
+    user,
     accessToken,
-    isAuthenticated, 
-    isLoading, 
+    isAuthenticated,
+    isLoading,
     error,
+    initialize,
     login: storeLogin,
     register: storeRegister,
     clearAuth 
   } = useAuthStore();
 
-  const login = useCallback(async (email: string, password: string) => {
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  const login = async (email: string, password: string) => {
     try {
       await storeLogin(email, password);
       router.replace(ROUTES.DASHBOARD.HOME);
@@ -26,28 +31,26 @@ export function useAuth() {
       console.error('useAuth: Login failed', error);
       throw error;
     }
-  }, [storeLogin, router]);
+  };
 
-  const register = useCallback(async (data: RegisterRequest) => {
+  const register = async (data: RegisterRequest) => {
     try {
-      console.log('useAuth: Registration attempt');
       await storeRegister(data);
-      console.log('useAuth: Registration successful');
       router.push(ROUTES.AUTH.SIGNIN);
     } catch (error: any) {
       console.error('useAuth: Registration failed', error);
       throw error;
     }
-  }, [storeRegister, router]);
+  };
 
-  const logout = useCallback(async () => {
+  const logout = async () => {
     try {
       clearAuth();
       router.replace(ROUTES.AUTH.SIGNIN);
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  }, [clearAuth, router]);
+  };
 
   return {
     user,
@@ -59,4 +62,4 @@ export function useAuth() {
     logout,
     register
   };
-} 
+}; 

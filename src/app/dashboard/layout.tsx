@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function DashboardLayout({
@@ -11,6 +12,7 @@ export default function DashboardLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">
@@ -27,8 +29,8 @@ export default function DashboardLayout({
           {/* <!-- ===== Header End ===== --> */}
 
           {/* <!-- ===== Main Content Start ===== --> */}
-          <main className="mx-auto max-w-screen-2xl p-4 md:p-6 2xl:p-10">
-            {children}
+          <main className="mx-auto w-full max-w-screen-2xl p-4 md:p-6 2xl:p-10">
+            <div className="mx-auto h-full w-full max-w-7xl">{children}</div>
           </main>
           {/* <!-- ===== Main Content End ===== --> */}
         </div>

@@ -17,61 +17,86 @@ interface AuthState {
 interface AuthActions {
   setAuth: (data: AuthResponse) => void;
   clearAuth: () => void;
-  refreshToken: () => Promise<void>;
   initialize: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
+  refreshToken: () => Promise<void>;
 }
 
-const initialState: AuthState = {
-  user: null,
-  accessToken: null,
-  isAuthenticated: false,
-  isLoading: true,
-  error: null
-};
-
-export const useAuthStore = create<AuthState & AuthActions & {
-  login: (email: string, password: string) => Promise<void>;
-}>()(
+export const useAuthStore = create<AuthState & AuthActions>()(
   persist(
     (set, get) => ({
-      ...initialState,
+      // Initial state
+      user: null,
+      accessToken: tokenStorage.getAuthToken() || null,
+      isAuthenticated: !!tokenStorage.getAuthToken(),
+      isLoading: true,
+      error: null,
+
+      initialize: async () => {
+        try {
+          const token = tokenStorage.getAuthToken();
+          if (!token) {
+            set({ isLoading: false, isAuthenticated: false });
+            return;
+          }
+
+          const profile = await authService.getProfile();
+          
+          if (profile) {
+            set({
+              user: profile,
+              accessToken: token,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            tokenStorage.clearTokens();
+            set({
+              user: null,
+              accessToken: null,
+              isAuthenticated: false,
+              isLoading: false,
+            });
+          }
+        } catch (error) {
+          console.error('AuthStore: Initialize error:', error);
+          tokenStorage.clearTokens();
+          set({
+            user: null,
+            accessToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+        }
+      },
 
       setAuth: (data: AuthResponse) => {
-        console.log('AuthStore: Setting auth data', { user: data.user });
-        
         // Store token in both memory and cookie
-        Cookies.set(AUTH_CONFIG.cookieNames.auth, data.accessToken, {
-          expires: AUTH_CONFIG.expiry.auth / (24 * 60 * 60),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/'
-        });
-
+        tokenStorage.setAuthToken(data.accessToken);
+        
         // Store in memory
         set({
           user: data.user,
           accessToken: data.accessToken,
           isAuthenticated: true,
-          error: null
+          error: null,
+          isLoading: false
         });
-
-        // Store user in localStorage for persistence
-        localStorage.setItem('auth-user', JSON.stringify(data.user));
       },
 
       clearAuth: () => {
-        console.log('AuthStore: Clearing auth data');
-        
-        // Clear cookies
-        Cookies.remove(AUTH_CONFIG.cookieNames.auth);
+        // Clear tokens
+        tokenStorage.clearTokens();
         
         // Clear memory
         set({
           user: null,
           accessToken: null,
           isAuthenticated: false,
-          error: null
+          error: null,
+          isLoading: false
         });
       },
 
@@ -82,43 +107,6 @@ export const useAuthStore = create<AuthState & AuthActions & {
         } catch (error) {
           get().clearAuth();
           throw error;
-        }
-      },
-
-      initialize: async () => {
-        try {
-          // Check both cookie and memory token
-          const cookieToken = Cookies.get(AUTH_CONFIG.cookieNames.auth);
-          const memoryToken = get().accessToken;
-          const token = cookieToken || memoryToken;
-
-          console.log('AuthStore: Initializing with token:', !!token);
-
-          if (!token) {
-            set({ isLoading: false });
-            return;
-          }
-
-          // Set token in memory if only in cookie
-          if (cookieToken && !memoryToken) {
-            set({ accessToken: cookieToken });
-          }
-
-          const response = await authService.getProfile();
-          if (response) {
-            set({ 
-              user: response, 
-              isAuthenticated: true,
-              accessToken: token
-            });
-          }
-        } catch (error: any) {
-          console.error('AuthStore: Initialize error:', error);
-          if (error.response?.status === 401) {
-            get().clearAuth();
-          }
-        } finally {
-          set({ isLoading: false });
         }
       },
 
@@ -137,18 +125,9 @@ export const useAuthStore = create<AuthState & AuthActions & {
           // Set auth data
           get().setAuth(response);
           
-          // Verify the state was updated
-          const state = get();
-          console.log('AuthStore: State after login', {
-            isAuthenticated: state.isAuthenticated,
-            hasUser: !!state.user,
-            hasToken: !!state.accessToken
-          });
-          
           return response;
         } catch (error: any) {
           console.error('AuthStore: Login error', error);
-          // Pass through the exact error message
           throw error;
         } finally {
           set({ isLoading: false });
@@ -165,10 +144,20 @@ export const useAuthStore = create<AuthState & AuthActions & {
           return response;
         } catch (error: any) {
           console.error('AuthStore: Registration error', error);
-          // Pass through the exact error message
           throw error;
         } finally {
           set({ isLoading: false });
+        }
+      },
+
+      logout: async () => {
+        try {
+          await authService.logout();
+          get().clearAuth();
+        } catch (error) {
+          console.error('Logout failed:', error);
+          // Still clear auth even if logout fails
+          get().clearAuth();
         }
       }
     }),
@@ -177,12 +166,18 @@ export const useAuthStore = create<AuthState & AuthActions & {
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
+        accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated
       }),
       onRehydrateStorage: () => (state) => {
         // Validate token on rehydration
-        if (state) {
-          state.initialize();
+        if (state && state.accessToken) {
+          const token = tokenStorage.getAuthToken();
+          if (!token) {
+            state.clearAuth();
+          } else {
+            state.initialize();
+          }
         }
       }
     }
