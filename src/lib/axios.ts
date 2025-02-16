@@ -3,6 +3,7 @@ import axios from "axios";
 import { API_CONFIG } from "@/config/api.config";
 import { tokenStorage } from "@/utils/storage.utils";
 import { useRouter } from "next/navigation";
+import { ROUTES } from "@/constants/routes.constants";
 
 // Create axios instance with proper baseURL
 export const axiosInstance = axios.create({
@@ -34,9 +35,14 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle token expiration
       tokenStorage.clearTokens();
-      // Use Next.js router instead of window.location
+      
+      // Use window.location only on client side
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/signin';
+        const currentPath = window.location.pathname;
+        // Only redirect if not already on auth page
+        if (!currentPath.startsWith('/auth')) {
+          window.location.href = ROUTES.AUTH.SIGNIN;
+        }
       }
     }
     return Promise.reject(error);

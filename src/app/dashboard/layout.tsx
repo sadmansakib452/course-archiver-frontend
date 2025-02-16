@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import Loader from "@/components/common/Loader";
 
 export default function DashboardLayout({
   children,
@@ -11,8 +12,25 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  // Handle authentication state
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/auth/signin");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Show loader while checking auth
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  // Don't render anything if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <div className="dark:bg-boxdark-2 dark:text-bodydark">

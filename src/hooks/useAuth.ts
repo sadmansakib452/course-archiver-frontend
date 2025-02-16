@@ -20,7 +20,19 @@ export const useAuth = () => {
   } = useAuthStore();
 
   useEffect(() => {
-    initialize();
+    let mounted = true;
+
+    const init = async () => {
+      if (mounted) {
+        await initialize();
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
   }, [initialize]);
 
   const login = async (email: string, password: string) => {
