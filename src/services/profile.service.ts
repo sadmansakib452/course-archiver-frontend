@@ -12,24 +12,21 @@ export const profileService = {
 
   updateProfile: async (data: UpdateProfileRequest): Promise<ProfileResponse> => {
     try {
-      console.log('Making update profile request with:', data); // Debug log
+      console.log('Making update profile request with:', data);
       const response = await apiService.patch<ProfileResponse>(
         API_CONFIG.endpoints.users.profile,
         data
       );
-      console.log('Update profile response:', response.data); // Debug log
       return response.data;
     } catch (error: any) {
-      console.error('Update profile error:', error.response || error); // Debug log
+      console.error('Profile update error:', error);
       
-      // Handle specific error cases
-      if (error.response?.status === 422) {
-        throw new Error(error.response.data.details?.password || error.response.data.message);
+      // Handle API error response
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || 'Failed to update profile');
       }
-      if (error.response?.status === 401) {
-        throw new Error("Current password is incorrect");
-      }
-      throw new Error(error.response?.data?.message || "Failed to update profile");
+      
+      throw error;
     }
   },
 }; 

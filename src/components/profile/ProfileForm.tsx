@@ -68,7 +68,7 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
 
       // Only make the API call if there are changes
       if (Object.keys(updateData).length > 0) {
-        console.log("Updating profile with data:", updateData); // Debug log
+        console.log("Updating profile with:", updateData);
         await updateProfile(updateData);
 
         // Clear password fields after successful update
@@ -81,8 +81,9 @@ export default function ProfileForm({ profile }: ProfileFormProps) {
         setError("No changes to update");
       }
     } catch (err: any) {
-      console.error("Profile update error:", err); // Debug log
-      setError(err.message);
+      console.error("Profile update error:", err);
+      // Use the error message from the API response
+      setError(err.message || "Failed to update profile");
     }
   };
 
