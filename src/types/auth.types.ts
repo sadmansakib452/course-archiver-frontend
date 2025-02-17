@@ -45,4 +45,15 @@ export interface RegisterResponse {
   message?: string;
   error?: string;
   statusCode?: number;
+}
+
+export interface RememberedCredentials {
+  email: string;
+  timestamp: number;
+}
+
+export interface RememberMeState {
+  remembered: RememberedCredentials | null;
+  rememberCredentials: (email: string) => void;
+  forgetCredentials: () => void;
 } 

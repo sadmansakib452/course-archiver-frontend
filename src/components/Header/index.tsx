@@ -8,6 +8,11 @@ import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { FiMenu, FiUser, FiSettings, FiLogOut } from "react-icons/fi";
 
+interface HeaderProps {
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
 const Header = ({ sidebarOpen, setSidebarOpen }: HeaderProps) => {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -142,7 +147,7 @@ const Header = ({ sidebarOpen, setSidebarOpen }: HeaderProps) => {
                 <ul className="flex flex-col gap-5 border-b border-stroke px-6 py-7.5 dark:border-strokedark">
                   <li>
                     <Link
-                      href="/profile"
+                      href="/dashboard/profile"
                       className="flex items-center gap-3.5 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base"
                     >
                       <FiUser className="h-5 w-5" />

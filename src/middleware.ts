@@ -1,27 +1,33 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { AUTH_CONFIG } from '@/config/api.config';
-import { ROUTES } from '@/constants/routes.constants';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { AUTH_CONFIG } from "@/config/api.config";
+import { ROUTES } from "@/constants/routes.constants";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get(AUTH_CONFIG.cookieNames.auth)?.value;
   const isAuthPage = request.nextUrl.pathname.startsWith("/auth");
+  const isResetPage = request.nextUrl.pathname === "/reset-password";
   const isRootPage = request.nextUrl.pathname === "/";
+
+  // Allow reset password page without auth
+  if (isResetPage) {
+    return NextResponse.next();
+  }
 
   // If accessing auth pages while authenticated, redirect to dashboard
   if (isAuthPage && token) {
-    return NextResponse.redirect(new URL(ROUTES.DASHBOARD.HOME, request.url));
+    return NextResponse.redirect(new URL(ROUTES.DASHBOARD.ROOT, request.url));
   }
 
   // If accessing protected pages without auth, redirect to login
-  if (!isAuthPage && !token) {
+  if (!isAuthPage && !isResetPage && !token) {
     return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNIN, request.url));
   }
 
   // If accessing root page, redirect based on auth status
   if (isRootPage) {
     if (token) {
-      return NextResponse.redirect(new URL(ROUTES.DASHBOARD.HOME, request.url));
+      return NextResponse.redirect(new URL(ROUTES.DASHBOARD.ROOT, request.url));
     } else {
       return NextResponse.redirect(new URL(ROUTES.AUTH.SIGNIN, request.url));
     }
@@ -42,4 +48,4 @@ export const config = {
      */
     "/((?!api|_next/static|_next/image|favicon.ico|images).*)",
   ],
-}; 
+};

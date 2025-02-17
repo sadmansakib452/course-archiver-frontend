@@ -10,8 +10,10 @@ class ApiService {
   private maxRetries: number = 3;
 
   private constructor() {
+    console.log('ApiService: Initializing with baseURL:', API_CONFIG.baseURL); // Debug log
+
     this.api = axios.create({
-      baseURL: API_CONFIG.baseURL,
+      baseURL: API_CONFIG.baseURL || 'http://localhost:4000', // Fallback URL
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json'
@@ -26,9 +28,10 @@ class ApiService {
       (config) => {
         const token = Cookies.get(API_CONFIG.cookieNames.auth);
         if (token) {
-          console.log('ApiService: Adding auth header');
+          console.log('ApiService: Adding auth header with token');
           config.headers.Authorization = `Bearer ${token}`;
         }
+        console.log('ApiService: Making request to:', config.baseURL + config.url); // Debug log
         return config;
       },
       (error) => {
@@ -106,6 +109,16 @@ class ApiService {
       if (error.response) {
         throw new Error(error.response.data.message || 'Request failed');
       }
+      throw error;
+    }
+  }
+
+  public async patch<T>(url: string, data?: any): Promise<AxiosResponse<T>> {
+    try {
+      const response = await this.api.patch<T>(url, data);
+      return response;
+    } catch (error: any) {
+      console.error('ApiService: PATCH request failed \n', error);
       throw error;
     }
   }

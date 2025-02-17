@@ -38,7 +38,7 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     try {
       await storeLogin(email, password);
-      router.replace(ROUTES.DASHBOARD.HOME);
+      router.replace(ROUTES.DASHBOARD.ROOT);
     } catch (error: any) {
       console.error('useAuth: Login failed', error);
       throw error;
