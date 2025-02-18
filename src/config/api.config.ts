@@ -3,6 +3,7 @@ export const API_CONFIG = {
   endpoints: {
     auth: {
       login: "/api/auth/login",
+      register: "/api/auth/register",
       refresh: "/api/auth/refresh",
       logout: "/api/auth/logout",
       passwordReset: {

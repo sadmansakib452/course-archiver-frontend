@@ -84,7 +84,7 @@ export const authService = {
       });
 
       const response = await apiService.post<AuthResponse>(
-        AUTH_ENDPOINTS.REGISTER,
+        API_CONFIG.endpoints.auth.register,
         {
           email: data.email,
           password: data.password,
