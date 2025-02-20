@@ -174,21 +174,42 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
     assignFaculty: async (courseId: string, facultyId: string) => {
       try {
-        set({ isLoading: true, error: null });
+        set((state) => ({
+          loading: {
+            ...state.loading,
+            actions: true,
+          },
+        }));
+
         const response = await courseService.assignFaculty(courseId, facultyId);
 
-        // Update the course in the state
-        const courses = get().courses.map((course) =>
-          course.id === courseId ? response.data.courses[0] : course,
-        );
+        // Optimistic update - update the course in state immediately
+        set((state) => ({
+          courses: state.courses.map((course) =>
+            course.id === courseId
+              ? {
+                  ...course,
+                  faculty: response.data.faculty,
+                  facultyId: response.data.facultyId,
+                }
+              : course,
+          ),
+          loading: {
+            ...state.loading,
+            actions: false,
+          },
+        }));
 
-        set({ courses });
+        return response;
       } catch (error: any) {
-        set({ error: error.message });
-        console.error("Failed to assign faculty:", error);
+        set((state) => ({
+          error: error.message,
+          loading: {
+            ...state.loading,
+            actions: false,
+          },
+        }));
         throw error;
-      } finally {
-        set({ isLoading: false });
       }
     },
 

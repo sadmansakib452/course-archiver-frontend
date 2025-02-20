@@ -52,7 +52,7 @@ export default function AddFacultyForm() {
             className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           />
           {errors.name && (
-            <p className="text-meta-1 text-sm mt-1">{errors.name.message}</p>
+            <p className="mt-1 text-sm text-meta-1">{errors.name.message}</p>
           )}
         </div>
 
@@ -74,7 +74,7 @@ export default function AddFacultyForm() {
             className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           />
           {errors.email && (
-            <p className="text-meta-1 text-sm mt-1">{errors.email.message}</p>
+            <p className="mt-1 text-sm text-meta-1">{errors.email.message}</p>
           )}
         </div>
 
@@ -96,7 +96,9 @@ export default function AddFacultyForm() {
             className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           />
           {errors.shortName && (
-            <p className="text-meta-1 text-sm mt-1">{errors.shortName.message}</p>
+            <p className="mt-1 text-sm text-meta-1">
+              {errors.shortName.message}
+            </p>
           )}
         </div>
 
@@ -114,7 +116,7 @@ export default function AddFacultyForm() {
             className="w-full rounded border-[1.5px] border-stroke bg-transparent px-5 py-3 font-medium outline-none transition focus:border-primary active:border-primary disabled:cursor-default disabled:bg-whiter dark:border-form-strokedark dark:bg-form-input dark:focus:border-primary"
           />
           {errors.designation && (
-            <p className="text-meta-1 text-sm mt-1">
+            <p className="mt-1 text-sm text-meta-1">
               {errors.designation.message}
             </p>
           )}
@@ -131,4 +133,4 @@ export default function AddFacultyForm() {
       </div>
     </form>
   );
-} 
+}

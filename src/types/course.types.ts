@@ -43,6 +43,8 @@ export interface CourseApiResponse {
   data: {
     courses: Course[];
     pagination: CoursePagination;
+    faculty?: Faculty;
+    facultyId?: string;
   };
 }
 

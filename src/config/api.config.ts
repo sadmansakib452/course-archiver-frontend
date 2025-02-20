@@ -33,9 +33,14 @@ export const API_CONFIG = {
       create: "/api/course-management/courses",
       update: (id: string) => `/api/course-management/courses/${id}`,
       delete: (id: string) => `/api/course-management/courses/${id}`,
-      toggleStatus: (id: string) => `/api/course-management/courses/${id}/status`,
-      assignFaculty: (id: string) => `/api/course-management/courses/${id}/faculty`,
-      permanentDelete: (id: string) => `/api/course-management/courses/${id}/permanent`,
+      toggleStatus: (id: string) =>
+        `/api/course-management/courses/${id}/status`,
+      assignFaculty: (id: string) => `/api/course-management/courses/${id}`,
+      permanentDelete: (id: string) =>
+        `/api/course-management/courses/${id}/permanent`,
+    },
+    courseManagement: {
+      courses: "/api/course-management/courses",
     },
   },
   cookieNames: {

@@ -11,7 +11,7 @@ import CourseTable from "./CourseTable";
 
 // Add specific loading state types
 interface ActionLoadingState {
-  type: 'deactivate' | 'delete' | 'restore';
+  type: 'deactivate' | 'delete' | 'restore' | 'assign';
   courseId: string;
 }
 
@@ -55,17 +55,28 @@ export default function CourseList() {
   };
 
   // Handle faculty assignment
-  const handleFacultyAssign = async (courseId: string, facultyId: string) => {
+  const handleFacultyAssign = async (facultyId: string) => {
+    if (!selectedCourse) return;
+    
     try {
-      setActionLoading(prev => ({ ...prev, [`faculty-${courseId}`]: { type: 'deactivate', courseId } }));
-      await assignFaculty(courseId, facultyId);
+      setActionLoading(prev => ({
+        ...prev,
+        [`faculty-${selectedCourse.id}`]: {
+          type: 'assign',
+          courseId: selectedCourse.id
+        }
+      }));
+
+      await assignFaculty(selectedCourse.id, facultyId);
       toast.success("Faculty assigned successfully");
+      setIsAssignModalOpen(false);
+      setSelectedCourse(null);
     } catch (error: any) {
       toast.error(error.message || "Failed to assign faculty");
     } finally {
       setActionLoading(prev => {
         const newState = { ...prev };
-        delete newState[`faculty-${courseId}`];
+        delete newState[`faculty-${selectedCourse.id}`];
         return newState;
       });
     }
@@ -244,12 +255,7 @@ export default function CourseList() {
           setIsAssignModalOpen(false);
           setSelectedCourse(null);
         }}
-        onAssign={(facultyId) => {
-          if (selectedCourse) {
-            return handleFacultyAssign(selectedCourse.id, facultyId);
-          }
-          return Promise.reject("No course selected");
-        }}
+        onAssign={handleFacultyAssign}
         currentFaculty={selectedCourse?.faculty || null}
         isLoading={Boolean(actionLoading[`faculty-${selectedCourse?.id}`])}
       />
