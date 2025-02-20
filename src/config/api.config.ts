@@ -28,6 +28,14 @@ export const API_CONFIG = {
         list: "/api/admin/faculty",
       },
     },
+    courses: {
+      list: "/api/course-management/courses",
+      create: "/api/course-management/courses",
+      update: (id: string) => `/api/course-management/courses/${id}`,
+      delete: (id: string) => `/api/course-management/courses/${id}`,
+      toggleStatus: (id: string) => `/api/course-management/courses/${id}/status`,
+      assignFaculty: (id: string) => `/api/course-management/courses/${id}/faculty`,
+    },
   },
   cookieNames: {
     auth: process.env.AUTH_COOKIE_NAME || "auth_token",

@@ -5,7 +5,9 @@ import {
   FiSettings, 
   FiBook,
   FiArchive,
-  FiHome 
+  FiHome,
+  FiPlusCircle,
+  FiList
 } from "react-icons/fi";
 
 // Define menu items with their permissions
@@ -40,19 +42,25 @@ export const MENU_ITEMS: SidebarItem[] = [
     ]
   },
   {
-    id: "courses",
-    label: "Courses",
+    id: "course-management",
+    label: "Course Management",
     route: "/dashboard/courses",
     icon: FiBook,
-    permission: ["FACULTY"],
+    permission: ["SUPER_ADMIN", "ADMIN"],
     children: [
       {
-        id: "archive-course",
-        label: "Archive Course",
-        route: "/dashboard/courses/archive",
-        icon: FiArchive
-      }
-    ]
+        id: "course-list",
+        label: "All Courses",
+        route: "/dashboard/courses",
+        icon: FiList,
+      },
+      {
+        id: "add-course",
+        label: "Add Course",
+        route: "/dashboard/courses/add",
+        icon: FiPlusCircle,
+      },
+    ],
   },
   {
     id: "settings",
