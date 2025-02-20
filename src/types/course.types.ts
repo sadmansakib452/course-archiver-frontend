@@ -90,3 +90,17 @@ export interface CourseError {
   message: string;
   code?: string;
 }
+
+export type CourseDeleteAction = "deactivate" | "permanent" | "restore";
+
+export type DeleteConfirmationStep = "initial" | "confirm";
+
+export interface CourseDeleteModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (action: CourseDeleteAction) => Promise<void>;
+  courseName: string;
+  isLoading: boolean;
+  isActive: boolean;
+  loadingAction: "deactivate" | "delete" | "restore" | null;
+}

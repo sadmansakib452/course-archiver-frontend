@@ -2,40 +2,71 @@
 import { useState } from "react";
 import { useCourseStore } from "@/store/course.store";
 import { Course, COURSE_TABLE_COLUMNS, CourseFilters } from "@/types/course.types";
-import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight } from "react-icons/fi";
+import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight, FiTrash2, FiRefreshCw } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import AssignFacultyModal from "./AssignFacultyModal";
+import DeleteCourseModal from "./DeleteCourseModal";
 import CourseFilterBar from "./CourseFilters";
 
+// Add specific loading state types
+interface ActionLoadingState {
+  type: 'deactivate' | 'delete' | 'restore';
+  courseId: string;
+}
+
 export default function CourseList() {
-  const { courses, isLoading, error, toggleCourseStatus, assignFaculty, fetchCourses, setFilters } = useCourseStore();
-  const [actionLoading, setActionLoading] = useState<{[key: string]: boolean}>({});
+  const { 
+    courses, 
+    isLoading, 
+    error, 
+    toggleCourseStatus, 
+    assignFaculty, 
+    fetchCourses, 
+    setFilters,
+    deactivateCourse,
+    deleteCoursePermantly,
+    restoreCourse,
+    refreshCourses
+  } = useCourseStore();
+
+  const [actionLoading, setActionLoading] = useState<{
+    [key: string]: ActionLoadingState;
+  }>({});
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Handle status toggle
   const handleStatusToggle = async (courseId: string) => {
     try {
-      setActionLoading(prev => ({ ...prev, [`status-${courseId}`]: true }));
+      setActionLoading(prev => ({ ...prev, [`status-${courseId}`]: { type: 'deactivate', courseId } }));
       await toggleCourseStatus(courseId);
       toast.success("Course status updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update course status");
     } finally {
-      setActionLoading(prev => ({ ...prev, [`status-${courseId}`]: false }));
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[`status-${courseId}`];
+        return newState;
+      });
     }
   };
 
   // Handle faculty assignment
   const handleFacultyAssign = async (courseId: string, facultyId: string) => {
     try {
-      setActionLoading(prev => ({ ...prev, [`faculty-${courseId}`]: true }));
+      setActionLoading(prev => ({ ...prev, [`faculty-${courseId}`]: { type: 'deactivate', courseId } }));
       await assignFaculty(courseId, facultyId);
       toast.success("Faculty assigned successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to assign faculty");
     } finally {
-      setActionLoading(prev => ({ ...prev, [`faculty-${courseId}`]: false }));
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[`faculty-${courseId}`];
+        return newState;
+      });
     }
   };
 
@@ -44,10 +75,94 @@ export default function CourseList() {
     setIsAssignModalOpen(true);
   };
 
-  // Add handler
+  // Handle delete actions
+  const openDeleteModal = (course: Course) => {
+    setSelectedCourse(course);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Update handleDeleteAction to include restore
+  const handleDeleteAction = async (action: CourseDeleteAction) => {
+    if (!selectedCourse) return;
+
+    const loadingKey = `delete-${selectedCourse.id}`;
+    try {
+      setActionLoading(prev => ({
+        ...prev,
+        [loadingKey]: {
+          type: action === "deactivate" ? "deactivate" : 
+                action === "restore" ? "restore" : "delete",
+          courseId: selectedCourse.id
+        }
+      }));
+      
+      switch (action) {
+        case "deactivate":
+          await deactivateCourse(selectedCourse.id);
+          toast.success(`Course "${selectedCourse.name}" has been deactivated`);
+          break;
+        case "restore":
+          await restoreCourse(selectedCourse.id);
+          toast.success(`Course "${selectedCourse.name}" has been restored`);
+          break;
+        case "permanent":
+          await deleteCoursePermantly(selectedCourse.id);
+          toast.success(`Course "${selectedCourse.name}" has been permanently deleted`);
+          break;
+      }
+
+      // Close modal after successful action
+      setIsDeleteModalOpen(false);
+      setSelectedCourse(null);
+
+      // Refresh the list after action
+      await refreshCourses();
+    } catch (error: any) {
+      const actionText = 
+        action === "deactivate" ? "deactivate" : 
+        action === "restore" ? "restore" : "permanently delete";
+      const errorMessage = error.response?.data?.message || `Failed to ${actionText} course`;
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[loadingKey];
+        return newState;
+      });
+    }
+  };
+
+  // Handle filter
   const handleFilter = (filters: CourseFilters) => {
     setFilters(filters);
     fetchCourses(filters);
+  };
+
+  // Add new handler for restore
+  const handleRestoreCourse = async (course: Course) => {
+    try {
+      setActionLoading(prev => ({
+        ...prev,
+        [`restore-${course.id}`]: {
+          type: 'restore',
+          courseId: course.id
+        }
+      }));
+      
+      await restoreCourse(course.id);
+      toast.success(`Course "${course.name}" has been restored`);
+      await refreshCourses();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Failed to restore course';
+      toast.error(errorMessage);
+    } finally {
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[`restore-${course.id}`];
+        return newState;
+      });
+    }
   };
 
   if (isLoading) {
@@ -131,17 +246,25 @@ export default function CourseList() {
                     </td>
                     <td className="py-5 px-4">
                       <div className="flex items-center space-x-3.5">
-                        <button
-                          onClick={() => handleStatusToggle(course.id)}
-                          disabled={actionLoading[`status-${course.id}`]}
-                          className="hover:text-primary"
-                        >
-                          {course.isActive ? (
-                            <FiToggleRight className="h-5 w-5" />
-                          ) : (
-                            <FiToggleLeft className="h-5 w-5" />
-                          )}
-                        </button>
+                        {course.isActive ? (
+                          // Show delete button for active courses
+                          <button
+                            className="hover:text-danger"
+                            onClick={() => openDeleteModal(course)}
+                            disabled={Boolean(actionLoading[`delete-${course.id}`])}
+                          >
+                            <FiTrash2 className="h-5 w-5" />
+                          </button>
+                        ) : (
+                          // Show restore button for inactive courses
+                          <button
+                            className="hover:text-success"
+                            onClick={() => handleRestoreCourse(course)}
+                            disabled={Boolean(actionLoading[`restore-${course.id}`])}
+                          >
+                            <FiRefreshCw className="h-5 w-5" />
+                          </button>
+                        )}
                         <button
                           className="hover:text-primary"
                           onClick={() => {/* Handle edit */}}
@@ -151,7 +274,7 @@ export default function CourseList() {
                         <button
                           className="hover:text-primary"
                           onClick={() => openAssignModal(course)}
-                          disabled={actionLoading[`faculty-${course.id}`]}
+                          disabled={Boolean(actionLoading[`faculty-${course.id}`])}
                         >
                           <FiUserPlus className="h-5 w-5" />
                         </button>
@@ -178,7 +301,22 @@ export default function CourseList() {
           return Promise.reject("No course selected");
         }}
         currentFaculty={selectedCourse?.faculty || null}
-        isLoading={actionLoading[`faculty-${selectedCourse?.id}`] || false}
+        isLoading={Boolean(actionLoading[`faculty-${selectedCourse?.id}`])}
+      />
+
+      <DeleteCourseModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedCourse(null);
+        }}
+        onConfirm={handleDeleteAction}
+        courseName={selectedCourse?.name || ""}
+        isLoading={Boolean(actionLoading[`delete-${selectedCourse?.id}`])}
+        isActive={selectedCourse?.isActive || false}
+        loadingAction={
+          actionLoading[`delete-${selectedCourse?.id}`]?.type || null
+        }
       />
     </>
   );

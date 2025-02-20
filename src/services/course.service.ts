@@ -8,6 +8,11 @@ import {
   CoursePagination 
 } from "@/types/course.types";
 
+interface DeleteResponse {
+  success: boolean;
+  message: string;
+}
+
 class CourseService {
   async getCourses(
     filters?: CourseFilters,
@@ -71,6 +76,54 @@ class CourseService {
     } catch (error: any) {
       console.error('Failed to assign faculty:', error);
       throw new Error(error.response?.data?.message || 'Failed to assign faculty');
+    }
+  }
+
+  async deactivateCourse(courseId: string): Promise<void> {
+    try {
+      const response = await axiosInstance.patch(
+        API_CONFIG.endpoints.courses.toggleStatus(courseId),
+        { isActive: false }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Failed to deactivate course:", error);
+      throw new Error(error.response?.data?.message || "Failed to deactivate course");
+    }
+  }
+
+  async deleteCoursePermantly(courseId: string): Promise<DeleteResponse> {
+    try {
+      console.log('CourseService: Attempting permanent delete:', courseId);
+      const response = await axiosInstance.delete<DeleteResponse>(
+        API_CONFIG.endpoints.courses.permanentDelete(courseId)
+      );
+      console.log('CourseService: Delete response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('CourseService: Delete failed:', error.response?.data || error);
+      throw new Error(
+        error.response?.data?.message || 
+        'Failed to permanently delete course'
+      );
+    }
+  }
+
+  async restoreCourse(courseId: string): Promise<CourseApiResponse> {
+    try {
+      console.log('CourseService: Attempting restore:', courseId);
+      const response = await axiosInstance.patch<CourseApiResponse>(
+        API_CONFIG.endpoints.courses.toggleStatus(courseId),
+        { isActive: true }
+      );
+      console.log('CourseService: Restore response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('CourseService: Restore failed:', error.response?.data || error);
+      throw new Error(
+        error.response?.data?.message || 
+        'Failed to restore course'
+      );
     }
   }
 }

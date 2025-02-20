@@ -29,6 +29,10 @@ interface CourseActions {
   setSort: (sort: CourseTableSort) => void;
   clearError: () => void;
   reset: () => void;
+  deactivateCourse: (courseId: string) => Promise<void>;
+  deleteCoursePermantly: (courseId: string) => Promise<void>;
+  refreshCourses: () => Promise<void>;
+  restoreCourse: (courseId: string) => Promise<void>;
 }
 
 const initialState: CourseState = {
@@ -123,6 +127,117 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
     reset: () => {
       set(initialState);
+    },
+
+    deactivateCourse: async (courseId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        console.log("CourseStore: Attempting deactivate:", courseId);
+
+        await courseService.deactivateCourse(courseId);
+
+        // Refetch courses with current filters to get updated data
+        const currentFilters = get().filters;
+        const currentSort = get().sort;
+        const currentPagination = get().pagination;
+
+        await get().fetchCourses(
+          currentFilters,
+          currentSort,
+          currentPagination
+            ? {
+                page: currentPagination.page,
+                limit: currentPagination.limit,
+              }
+            : undefined,
+        );
+
+        console.log("CourseStore: Deactivation successful and data refreshed");
+      } catch (error: any) {
+        console.error("CourseStore: Deactivation failed:", error);
+        set({ error: error.message });
+        throw error;
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    deleteCoursePermantly: async (courseId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        console.log("CourseStore: Attempting permanent delete:", courseId);
+
+        await courseService.deleteCoursePermantly(courseId);
+
+        // Refetch courses with current filters to get updated data
+        const currentFilters = get().filters;
+        const currentSort = get().sort;
+        const currentPagination = get().pagination;
+
+        await get().fetchCourses(
+          currentFilters,
+          currentSort,
+          currentPagination
+            ? {
+                page: currentPagination.page,
+                limit: currentPagination.limit,
+              }
+            : undefined,
+        );
+
+        console.log("CourseStore: Delete successful and data refreshed");
+      } catch (error: any) {
+        console.error("CourseStore: Delete failed:", error);
+        set({ error: error.message });
+        throw error;
+      } finally {
+        set({ isLoading: false });
+      }
+    },
+
+    // Helper function to refresh courses
+    refreshCourses: async () => {
+      const { filters, sort, pagination } = get();
+      await get().fetchCourses(
+        filters,
+        sort,
+        pagination
+          ? {
+              page: pagination.page,
+              limit: pagination.limit,
+            }
+          : undefined,
+      );
+    },
+
+    restoreCourse: async (courseId: string) => {
+      try {
+        set({ isLoading: true, error: null });
+        console.log("CourseStore: Attempting restore:", courseId);
+
+        await courseService.restoreCourse(courseId);
+
+        // Refetch courses with current filters
+        const { filters, sort, pagination } = get();
+        await get().fetchCourses(
+          filters,
+          sort,
+          pagination
+            ? {
+                page: pagination.page,
+                limit: pagination.limit,
+              }
+            : undefined,
+        );
+
+        console.log("CourseStore: Restore successful and data refreshed");
+      } catch (error: any) {
+        console.error("CourseStore: Restore failed:", error);
+        set({ error: error.message });
+        throw error;
+      } finally {
+        set({ isLoading: false });
+      }
     },
   }),
 );
