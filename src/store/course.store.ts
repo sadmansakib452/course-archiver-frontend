@@ -5,16 +5,25 @@ import {
   CourseTableSort,
   CoursePagination,
   CourseApiResponse,
+  CourseSearchState,
+  PaginationState,
 } from "@/types/course.types";
 import { courseService } from "@/services/course.service";
+import { debounce } from "lodash";
 
 interface CourseState {
   courses: Course[];
-  pagination: CoursePagination | null;
+  pagination: PaginationState;
   filters: CourseFilters;
   sort: CourseTableSort;
+  search: CourseSearchState;
   isLoading: boolean;
   error: string | null;
+  loading: {
+    table: boolean;
+    filters: boolean;
+    actions: boolean;
+  };
 }
 
 interface CourseActions {
@@ -33,19 +42,78 @@ interface CourseActions {
   deleteCoursePermantly: (courseId: string) => Promise<void>;
   refreshCourses: () => Promise<void>;
   restoreCourse: (courseId: string) => Promise<void>;
+  setSearchTerm: (searchTerm: string) => void;
+  handleSearch: (searchTerm: string) => Promise<void>;
+  clearSearch: () => void;
+  setTableLoading: (loading: boolean) => void;
+  setFilterLoading: (loading: boolean) => void;
+  setActionLoading: (loading: boolean) => void;
 }
 
 const initialState: CourseState = {
   courses: [],
-  pagination: null,
+  pagination: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    pages: 1,
+  },
   filters: {},
   sort: {
     field: "createdAt",
     direction: "desc",
   },
+  search: {
+    searchTerm: "",
+    isSearching: false,
+  },
   isLoading: false,
   error: null,
+  loading: {
+    table: false,
+    filters: false,
+    actions: false,
+  },
 };
+
+// Update the type for set and get
+const handleSearchImpl =
+  (
+    set: (
+      state: Partial<CourseState> | ((state: CourseState) => CourseState),
+    ) => void,
+    get: () => CourseState & CourseActions,
+  ) =>
+  async (searchTerm: string): Promise<void> => {
+    try {
+      set((state: CourseState) => ({
+        ...state,
+        search: {
+          ...state.search,
+          isSearching: true,
+        },
+      }));
+
+      const currentFilters = get().filters;
+      const updatedFilters = {
+        ...currentFilters,
+        search: searchTerm || undefined,
+        page: 1,
+      };
+
+      await get().fetchCourses(updatedFilters);
+    } catch (error) {
+      console.error("Search failed:", error);
+    } finally {
+      set((state: CourseState) => ({
+        ...state,
+        search: {
+          ...state.search,
+          isSearching: false,
+        },
+      }));
+    }
+  };
 
 export const useCourseStore = create<CourseState & CourseActions>(
   (set, get) => ({
@@ -53,7 +121,13 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
     fetchCourses: async (filters, sort, pagination) => {
       try {
-        set({ isLoading: true, error: null });
+        set((state) => ({
+          loading: {
+            ...state.loading,
+            table: true,
+            filters: false,
+          },
+        }));
         const response = await courseService.getCourses(
           filters || get().filters,
           sort || get().sort,
@@ -69,7 +143,12 @@ export const useCourseStore = create<CourseState & CourseActions>(
         set({ error: error.message });
         console.error("Failed to fetch courses:", error);
       } finally {
-        set({ isLoading: false });
+        set((state) => ({
+          loading: {
+            ...state.loading,
+            table: false,
+          },
+        }));
       }
     },
 
@@ -212,32 +291,93 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
     restoreCourse: async (courseId: string) => {
       try {
-        set({ isLoading: true, error: null });
-        console.log("CourseStore: Attempting restore:", courseId);
+        set((state) => ({
+          loading: {
+            ...state.loading,
+            table: true,
+            actions: true,
+          },
+        }));
 
         await courseService.restoreCourse(courseId);
 
-        // Refetch courses with current filters
+        // Refetch only table data
         const { filters, sort, pagination } = get();
-        await get().fetchCourses(
+        const response = await courseService.getCourses(
           filters,
           sort,
-          pagination
-            ? {
-                page: pagination.page,
-                limit: pagination.limit,
-              }
-            : undefined,
+          pagination,
         );
 
-        console.log("CourseStore: Restore successful and data refreshed");
+        set((state) => ({
+          courses: response.data.courses,
+          pagination: response.data.pagination,
+          loading: {
+            ...state.loading,
+            table: false,
+            actions: false,
+          },
+        }));
       } catch (error: any) {
-        console.error("CourseStore: Restore failed:", error);
-        set({ error: error.message });
+        set((state) => ({
+          error: error.message,
+          loading: {
+            ...state.loading,
+            table: false,
+            actions: false,
+          },
+        }));
         throw error;
-      } finally {
-        set({ isLoading: false });
       }
     },
+
+    setSearchTerm: (searchTerm: string) => {
+      set((state) => ({
+        search: {
+          ...state.search,
+          searchTerm,
+        },
+      }));
+    },
+
+    handleSearch: (searchTerm: string): Promise<void> => {
+      return new Promise((resolve) => {
+        const debouncedSearch = debounce(async (term: string) => {
+          await handleSearchImpl(set, get)(term);
+          resolve();
+        }, 500);
+        debouncedSearch(searchTerm);
+      });
+    },
+
+    clearSearch: () => {
+      const store = get();
+      store.setSearchTerm("");
+      store.handleSearch("");
+    },
+
+    setTableLoading: (loading: boolean) =>
+      set((state) => ({
+        loading: {
+          ...state.loading,
+          table: loading,
+        },
+      })),
+
+    setFilterLoading: (loading: boolean) =>
+      set((state) => ({
+        loading: {
+          ...state.loading,
+          filters: loading,
+        },
+      })),
+
+    setActionLoading: (loading: boolean) =>
+      set((state) => ({
+        loading: {
+          ...state.loading,
+          actions: loading,
+        },
+      })),
   }),
 );

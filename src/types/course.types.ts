@@ -54,6 +54,8 @@ export interface CourseFilters {
   facultyId?: string;
   isActive?: boolean;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 // Course Table Sort
@@ -103,4 +105,18 @@ export interface CourseDeleteModalProps {
   isLoading: boolean;
   isActive: boolean;
   loadingAction: "deactivate" | "delete" | "restore" | null;
+}
+
+// Add to existing types
+export interface CourseSearchState {
+  searchTerm: string;
+  isSearching: boolean;
+}
+
+// Add pagination type
+export interface PaginationState {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
 }

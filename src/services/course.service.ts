@@ -22,7 +22,7 @@ class CourseService {
     try {
       const params = new URLSearchParams();
       
-      // Add filters
+      // Add filters including search
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined) {

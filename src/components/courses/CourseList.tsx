@@ -6,7 +6,8 @@ import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight, FiTrash2, FiRefreshCw
 import { toast } from "react-hot-toast";
 import AssignFacultyModal from "./AssignFacultyModal";
 import DeleteCourseModal from "./DeleteCourseModal";
-import CourseFilterBar from "./CourseFilters";
+import FilterBar from "./filters/FilterBar";
+import CourseTable from "./CourseTable";
 
 // Add specific loading state types
 interface ActionLoadingState {
@@ -17,8 +18,8 @@ interface ActionLoadingState {
 export default function CourseList() {
   const { 
     courses, 
-    isLoading, 
-    error, 
+    loading,  // Use granular loading state
+    error,
     toggleCourseStatus, 
     assignFaculty, 
     fetchCourses, 
@@ -75,8 +76,8 @@ export default function CourseList() {
     setIsAssignModalOpen(true);
   };
 
-  // Handle delete actions
-  const openDeleteModal = (course: Course) => {
+  // Create a separate handler for delete button click
+  const handleDelete = (course: Course) => {
     setSelectedCourse(course);
     setIsDeleteModalOpen(true);
   };
@@ -165,14 +166,6 @@ export default function CourseList() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-10">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -182,112 +175,69 @@ export default function CourseList() {
   }
 
   return (
-    <>
-      <CourseFilterBar onFilter={handleFilter} isLoading={isLoading} />
-      <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-        <div className="max-w-full overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-gray-2 text-left dark:bg-meta-4">
-                {COURSE_TABLE_COLUMNS.map((column) => (
-                  <th key={column.id} className="py-4 px-4 font-medium text-black dark:text-white">
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {courses.length === 0 ? (
-                <tr>
-                  <td colSpan={COURSE_TABLE_COLUMNS.length} className="text-center py-6">
-                    No courses found
-                  </td>
-                </tr>
-              ) : (
-                courses.map((course) => (
-                  <tr key={course.id} className="border-b border-[#eee] dark:border-strokedark">
-                    <td className="py-5 px-4">
-                      <p className="text-black dark:text-white">{course.code}</p>
-                    </td>
-                    <td className="py-5 px-4">
-                      <p className="text-black dark:text-white">{course.name}</p>
-                    </td>
-                    <td className="py-5 px-4">
-                      <p className="text-black dark:text-white">{course.section}</p>
-                    </td>
-                    <td className="py-5 px-4">
-                      <p className="text-black dark:text-white">{course.semester}</p>
-                    </td>
-                    <td className="py-5 px-4">
-                      <p className="text-black dark:text-white">{course.year}</p>
-                    </td>
-                    <td className="py-5 px-4">
-                      {course.faculty ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-black dark:text-white">
-                            {course.faculty.name}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            ({course.faculty.shortName})
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-meta-1">Not Assigned</span>
-                      )}
-                    </td>
-                    <td className="py-5 px-4">
-                      <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${
-                        course.isActive 
-                          ? 'bg-success/10 text-success' 
-                          : 'bg-danger/10 text-danger'
-                      }`}>
-                        {course.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="py-5 px-4">
-                      <div className="flex items-center space-x-3.5">
-                        {course.isActive ? (
-                          // Show delete button for active courses
-                          <button
-                            className="hover:text-danger"
-                            onClick={() => openDeleteModal(course)}
-                            disabled={Boolean(actionLoading[`delete-${course.id}`])}
-                          >
-                            <FiTrash2 className="h-5 w-5" />
-                          </button>
-                        ) : (
-                          // Show restore button for inactive courses
-                          <button
-                            className="hover:text-success"
-                            onClick={() => handleRestoreCourse(course)}
-                            disabled={Boolean(actionLoading[`restore-${course.id}`])}
-                          >
-                            <FiRefreshCw className="h-5 w-5" />
-                          </button>
-                        )}
-                        <button
-                          className="hover:text-primary"
-                          onClick={() => {/* Handle edit */}}
-                        >
-                          <FiEdit2 className="h-5 w-5" />
-                        </button>
-                        <button
-                          className="hover:text-primary"
-                          onClick={() => openAssignModal(course)}
-                          disabled={Boolean(actionLoading[`faculty-${course.id}`])}
-                        >
-                          <FiUserPlus className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header with slide animation */}
+      <div 
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        style={{ animation: 'slideIn 0.3s ease-out' }}
+      >
+        <div>
+          <h2 className="text-2xl font-semibold text-black dark:text-white">
+            Course Management
+          </h2>
+          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
+            Manage your courses, assign faculty, and track course status
+          </p>
         </div>
       </div>
-      
+
+      {/* Quick Stats with scale animation */}
+      <div 
+        className="flex items-center gap-4 rounded-lg border border-stroke/10 bg-white/50 px-4 py-2 dark:border-strokedark/10 dark:bg-meta-4/20"
+        style={{ animation: 'scaleIn 0.3s ease-out' }}
+      >
+        <div className="text-center">
+          <p className="text-xs text-black/60 dark:text-white/60">Total</p>
+          <p className="text-lg font-semibold text-black dark:text-white">
+            {courses.length}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-black/60 dark:text-white/60">Active</p>
+          <p className="text-lg font-semibold text-success">
+            {courses.filter(c => c.isActive).length}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-black/60 dark:text-white/60">Inactive</p>
+          <p className="text-lg font-semibold text-danger">
+            {courses.filter(c => !c.isActive).length}
+          </p>
+        </div>
+      </div>
+
+      {/* Error state with fade animation */}
+      {error && (
+        <div 
+          className="rounded-lg border border-danger/20 bg-danger/10 p-4 text-sm text-danger animate-fade-in"
+        >
+          {error}
+        </div>
+      )}
+
+      {/* Filters */}
+      <FilterBar />
+
+      {/* Table */}
+      <CourseTable
+        courses={courses}
+        isLoading={loading.table}
+        onDelete={handleDelete}
+        onRestore={handleRestoreCourse}
+        onAssign={openAssignModal}
+        actionLoading={actionLoading}
+      />
+
       <AssignFacultyModal
         isOpen={isAssignModalOpen}
         onClose={() => {
@@ -318,6 +268,6 @@ export default function CourseList() {
           actionLoading[`delete-${selectedCourse?.id}`]?.type || null
         }
       />
-    </>
+    </div>
   );
 } 

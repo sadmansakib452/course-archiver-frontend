@@ -1,10 +1,10 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, AuthResponse, RegisterRequest } from '@/types/auth.types';
-import { tokenStorage } from '@/utils/storage.utils';
-import { authService } from '@/services/auth.service';
-import Cookies from 'js-cookie';
-import { AUTH_CONFIG } from '@/config/api.config';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { User, AuthResponse, RegisterRequest } from "@/types/auth.types";
+import { tokenStorage } from "@/utils/storage.utils";
+import { authService } from "@/services/auth.service";
+import Cookies from "js-cookie";
+import { AUTH_CONFIG } from "@/config/api.config";
 
 interface AuthState {
   user: User | null;
@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           }
 
           const profile = await authService.getProfile();
-          
+
           if (profile) {
             set({
               user: profile,
@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             });
           }
         } catch (error) {
-          console.error('AuthStore: Initialize error:', error);
+          console.error("AuthStore: Initialize error:", error);
           tokenStorage.clearTokens();
           set({
             user: null,
@@ -75,28 +75,28 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       setAuth: (data: AuthResponse) => {
         // Store token in both memory and cookie
         tokenStorage.setAuthToken(data.accessToken);
-        
+
         // Store in memory
         set({
           user: data.user,
           accessToken: data.accessToken,
           isAuthenticated: true,
           error: null,
-          isLoading: false
+          isLoading: false,
         });
       },
 
       clearAuth: () => {
         // Clear tokens
         tokenStorage.clearTokens();
-        
+
         // Clear memory
         set({
           user: null,
           accessToken: null,
           isAuthenticated: false,
           error: null,
-          isLoading: false
+          isLoading: false,
         });
       },
 
@@ -111,23 +111,26 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       login: async (email: string, password: string) => {
-        console.log('AuthStore: Login attempt');
+        console.log("AuthStore: Login attempt");
         set({ isLoading: true, error: null });
 
         try {
           const response = await authService.login({ email, password });
-          console.log('AuthStore: Login successful, setting auth data', response);
-          
+          console.log(
+            "AuthStore: Login successful, setting auth data",
+            response,
+          );
+
           if (!response.accessToken) {
-            throw new Error('No access token received');
+            throw new Error("No access token received");
           }
 
           // Set auth data
           get().setAuth(response);
-          
+
           return response;
         } catch (error: any) {
-          console.error('AuthStore: Login error', error);
+          console.error("AuthStore: Login error", error);
           throw error;
         } finally {
           set({ isLoading: false });
@@ -135,15 +138,15 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       register: async (data: RegisterRequest) => {
-        console.log('AuthStore: Registration attempt');
+        console.log("AuthStore: Registration attempt");
         set({ isLoading: true, error: null });
 
         try {
           const response = await authService.register(data);
-          console.log('AuthStore: Registration successful');
+          console.log("AuthStore: Registration successful");
           return response;
         } catch (error: any) {
-          console.error('AuthStore: Registration error', error);
+          console.error("AuthStore: Registration error", error);
           throw error;
         } finally {
           set({ isLoading: false });
@@ -155,19 +158,19 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           await authService.logout();
           get().clearAuth();
         } catch (error) {
-          console.error('Logout failed:', error);
+          console.error("Logout failed:", error);
           // Still clear auth even if logout fails
           get().clearAuth();
         }
-      }
+      },
     }),
     {
-      name: 'auth-storage',
+      name: "auth-storage",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
         // Validate token on rehydration
@@ -179,7 +182,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             state.initialize();
           }
         }
-      }
-    }
-  )
-); 
+      },
+    },
+  ),
+);
