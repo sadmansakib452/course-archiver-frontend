@@ -21,18 +21,19 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" 
-        onClick={onClose}
-      />
-      
-      {/* Modal Content */}
-      <div className="relative flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-black/50 px-4 py-5">
+      <div className="relative w-full max-w-lg rounded-lg bg-white p-4 dark:bg-boxdark md:p-6">
         {children}
       </div>
     </div>,

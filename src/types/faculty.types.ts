@@ -1,8 +1,8 @@
 export interface Faculty {
   id: string;
-  shortName: string;
   name: string;
   email: string;
+  shortName: string;
   designation: string;
   department: string;
   isActive: boolean;

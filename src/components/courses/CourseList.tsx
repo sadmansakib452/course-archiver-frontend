@@ -1,8 +1,24 @@
 "use client";
 import { useState } from "react";
 import { useCourseStore } from "@/store/course.store";
-import { Course, COURSE_TABLE_COLUMNS, CourseFilters } from "@/types/course.types";
-import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight, FiTrash2, FiRefreshCw, FiPlus } from "react-icons/fi";
+import {
+  Course,
+  COURSE_TABLE_COLUMNS,
+  CourseFilters,
+  CourseDeleteAction,
+  UpdateCourseInput,
+  CreateCourseInput,
+  CourseActionType,
+} from "@/types/course.types";
+import {
+  FiEdit2,
+  FiUserPlus,
+  FiToggleLeft,
+  FiToggleRight,
+  FiTrash2,
+  FiRefreshCw,
+  FiPlus,
+} from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import AssignFacultyModal from "./AssignFacultyModal";
 import DeleteCourseModal from "./DeleteCourseModal";
@@ -10,28 +26,29 @@ import FilterBar from "./filters/FilterBar";
 import CourseTable from "./CourseTable";
 import EditCourseModal from "./EditCourseModal";
 import AddCourseModal from "./AddCourseModal";
+import { Faculty } from "@/types/faculty.types";
 
 // Add specific loading state types
 interface ActionLoadingState {
-  type: 'deactivate' | 'delete' | 'restore' | 'assign' | 'update';
+  type: "deactivate" | "delete" | "restore" | "assign" | "update";
   courseId: string;
 }
 
 export default function CourseList() {
-  const { 
-    courses, 
-    loading,  // Use granular loading state
+  const {
+    courses,
+    loading, // Use granular loading state
     error,
-    toggleCourseStatus, 
-    assignFaculty, 
-    fetchCourses, 
+    toggleCourseStatus,
+    assignFaculty,
+    fetchCourses,
     setFilters,
     deactivateCourse,
     deleteCoursePermantly,
     restoreCourse,
     refreshCourses,
     updateCourse,
-    createCourse
+    createCourse,
   } = useCourseStore();
 
   const [actionLoading, setActionLoading] = useState<{
@@ -46,13 +63,16 @@ export default function CourseList() {
   // Handle status toggle
   const handleStatusToggle = async (courseId: string) => {
     try {
-      setActionLoading(prev => ({ ...prev, [`status-${courseId}`]: { type: 'deactivate', courseId } }));
+      setActionLoading((prev) => ({
+        ...prev,
+        [`status-${courseId}`]: { type: "deactivate", courseId },
+      }));
       await toggleCourseStatus(courseId);
       toast.success("Course status updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update course status");
     } finally {
-      setActionLoading(prev => {
+      setActionLoading((prev) => {
         const newState = { ...prev };
         delete newState[`status-${courseId}`];
         return newState;
@@ -63,14 +83,14 @@ export default function CourseList() {
   // Handle faculty assignment
   const handleFacultyAssign = async (facultyId: string) => {
     if (!selectedCourse) return;
-    
+
     try {
-      setActionLoading(prev => ({
+      setActionLoading((prev) => ({
         ...prev,
         [`faculty-${selectedCourse.id}`]: {
-          type: 'assign',
-          courseId: selectedCourse.id
-        }
+          type: "assign",
+          courseId: selectedCourse.id,
+        },
       }));
 
       await assignFaculty(selectedCourse.id, facultyId);
@@ -80,7 +100,7 @@ export default function CourseList() {
     } catch (error: any) {
       toast.error(error.message || "Failed to assign faculty");
     } finally {
-      setActionLoading(prev => {
+      setActionLoading((prev) => {
         const newState = { ...prev };
         delete newState[`faculty-${selectedCourse.id}`];
         return newState;
@@ -103,50 +123,34 @@ export default function CourseList() {
   const handleDeleteAction = async (action: CourseDeleteAction) => {
     if (!selectedCourse) return;
 
-    const loadingKey = `delete-${selectedCourse.id}`;
+    const actionKey = `delete-${selectedCourse.id}`;
+
     try {
-      setActionLoading(prev => ({
+      setActionLoading((prev) => ({
         ...prev,
-        [loadingKey]: {
-          type: action === "deactivate" ? "deactivate" : 
-                action === "restore" ? "restore" : "delete",
-          courseId: selectedCourse.id
-        }
+        [actionKey]: {
+          type: action as CourseActionType, // Ensure type safety
+          courseId: selectedCourse.id,
+        },
       }));
-      
-      switch (action) {
-        case "deactivate":
-          await deactivateCourse(selectedCourse.id);
-          toast.success(`Course "${selectedCourse.name}" has been deactivated`);
-          break;
-        case "restore":
-          await restoreCourse(selectedCourse.id);
-          toast.success(`Course "${selectedCourse.name}" has been restored`);
-          break;
-        case "permanent":
-          await deleteCoursePermantly(selectedCourse.id);
-          toast.success(`Course "${selectedCourse.name}" has been permanently deleted`);
-          break;
+
+      if (action === "delete") {
+        await deleteCoursePermantly(selectedCourse.id);
+      } else if (action === "deactivate") {
+        await deactivateCourse(selectedCourse.id);
+      } else if (action === "restore") {
+        await restoreCourse(selectedCourse.id);
       }
 
-      // Close modal after successful action
       setIsDeleteModalOpen(false);
       setSelectedCourse(null);
-
-      // Refresh the list after action
-      await refreshCourses();
+      toast.success(`Course ${action}d successfully`);
     } catch (error: any) {
-      const actionText = 
-        action === "deactivate" ? "deactivate" : 
-        action === "restore" ? "restore" : "permanently delete";
-      const errorMessage = error.response?.data?.message || `Failed to ${actionText} course`;
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
+      toast.error(error.message);
     } finally {
-      setActionLoading(prev => {
-        const newState = { ...prev };
-        delete newState[loadingKey];
-        return newState;
+      setActionLoading((prev) => {
+        const { [actionKey]: _, ...rest } = prev;
+        return rest;
       });
     }
   };
@@ -160,22 +164,23 @@ export default function CourseList() {
   // Add new handler for restore
   const handleRestoreCourse = async (course: Course) => {
     try {
-      setActionLoading(prev => ({
+      setActionLoading((prev) => ({
         ...prev,
         [`restore-${course.id}`]: {
-          type: 'restore',
-          courseId: course.id
-        }
+          type: "restore",
+          courseId: course.id,
+        },
       }));
-      
+
       await restoreCourse(course.id);
       toast.success(`Course "${course.name}" has been restored`);
       await refreshCourses();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Failed to restore course';
+      const errorMessage =
+        error.response?.data?.message || "Failed to restore course";
       toast.error(errorMessage);
     } finally {
-      setActionLoading(prev => {
+      setActionLoading((prev) => {
         const newState = { ...prev };
         delete newState[`restore-${course.id}`];
         return newState;
@@ -190,14 +195,14 @@ export default function CourseList() {
 
   const handleUpdate = async (data: UpdateCourseInput) => {
     if (!selectedCourse) return;
-    
+
     try {
-      setActionLoading(prev => ({
+      setActionLoading((prev) => ({
         ...prev,
         [`update-${selectedCourse.id}`]: {
-          type: 'update',
-          courseId: selectedCourse.id
-        }
+          type: "update",
+          courseId: selectedCourse.id,
+        },
       }));
 
       await updateCourse(selectedCourse.id, data);
@@ -207,7 +212,7 @@ export default function CourseList() {
     } catch (error: any) {
       toast.error(error.message || "Failed to update course");
     } finally {
-      setActionLoading(prev => {
+      setActionLoading((prev) => {
         const newState = { ...prev };
         delete newState[`update-${selectedCourse.id}`];
         return newState;
@@ -235,11 +240,11 @@ export default function CourseList() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="animate-fade-in space-y-6">
       {/* Page Header with slide animation */}
-      <div 
+      <div
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-        style={{ animation: 'slideIn 0.3s ease-out' }}
+        style={{ animation: "slideIn 0.3s ease-out" }}
       >
         <div>
           <h2 className="text-2xl font-semibold text-black dark:text-white">
@@ -249,7 +254,7 @@ export default function CourseList() {
             Manage your courses, assign faculty, and track course status
           </p>
         </div>
-        
+
         {/* Add Course Button */}
         <button
           onClick={() => setIsAddModalOpen(true)}
@@ -261,9 +266,9 @@ export default function CourseList() {
       </div>
 
       {/* Quick Stats with scale animation */}
-      <div 
+      <div
         className="flex items-center gap-4 rounded-lg border border-stroke/10 bg-white/50 px-4 py-2 dark:border-strokedark/10 dark:bg-meta-4/20"
-        style={{ animation: 'scaleIn 0.3s ease-out' }}
+        style={{ animation: "scaleIn 0.3s ease-out" }}
       >
         <div className="text-center">
           <p className="text-xs text-black/60 dark:text-white/60">Total</p>
@@ -274,22 +279,20 @@ export default function CourseList() {
         <div className="text-center">
           <p className="text-xs text-black/60 dark:text-white/60">Active</p>
           <p className="text-lg font-semibold text-success">
-            {courses.filter(c => c.isActive).length}
+            {courses.filter((c) => c.isActive).length}
           </p>
         </div>
         <div className="text-center">
           <p className="text-xs text-black/60 dark:text-white/60">Inactive</p>
           <p className="text-lg font-semibold text-danger">
-            {courses.filter(c => !c.isActive).length}
+            {courses.filter((c) => !c.isActive).length}
           </p>
         </div>
       </div>
 
       {/* Error state with fade animation */}
       {error && (
-        <div 
-          className="rounded-lg border border-danger/20 bg-danger/10 p-4 text-sm text-danger animate-fade-in"
-        >
+        <div className="animate-fade-in rounded-lg border border-danger/20 bg-danger/10 p-4 text-sm text-danger">
           {error}
         </div>
       )}
@@ -356,4 +359,4 @@ export default function CourseList() {
       />
     </div>
   );
-} 
+}

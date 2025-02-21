@@ -1,5 +1,5 @@
 // Add import at the top
-import { Faculty } from "@/types/faculty.types";
+import { Faculty } from "./faculty.types";
 
 // Course-related enums
 export enum CourseSemester {
@@ -24,11 +24,10 @@ export interface Course {
   section: number;
   semester: CourseSemester;
   year: number;
-  facultyId: string | null;
+  faculty: Faculty | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  faculty: CourseFaculty | null;
 }
 
 // Pagination interface
@@ -98,7 +97,7 @@ export interface CourseError {
   code?: string;
 }
 
-export type CourseDeleteAction = "deactivate" | "permanent" | "restore";
+export type CourseDeleteAction = 'delete' | 'deactivate' | 'restore';
 
 export type DeleteConfirmationStep = "initial" | "confirm";
 
@@ -109,7 +108,7 @@ export interface CourseDeleteModalProps {
   courseName: string;
   isLoading: boolean;
   isActive: boolean;
-  loadingAction: "deactivate" | "delete" | "restore" | null;
+  loadingAction: CourseActionType;
 }
 
 // Add to existing types
@@ -153,20 +152,12 @@ export interface EditCourseModalProps {
 }
 
 // Add loading action type to existing types
-export type CourseActionType =
-  | "deactivate"
-  | "delete"
-  | "restore"
-  | "update"
-  | "assign"
-  | "create";
+export type CourseActionType = 'deactivate' | 'delete' | 'restore' | 'update' | 'assign' | null;
 
 // Update existing loading state type if exists, or add new
-export interface CourseLoadingState {
-  [key: string]: {
-    type: CourseActionType;
-    courseId: string;
-  };
+export interface ActionLoadingState {
+  type: Exclude<CourseActionType, null>;  // Exclude null from possible types
+  courseId: string;
 }
 
 // Add CreateCourse related types

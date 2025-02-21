@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { FiX, FiLoader, FiSearch } from "react-icons/fi";
-import { CourseFaculty } from "@/types/course.types";
 import { Faculty } from "@/types/faculty.types";
 import { facultyService } from "@/services/faculty.service";
 import Modal from "@/components/common/Modal";

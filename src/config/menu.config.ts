@@ -1,119 +1,128 @@
 import { SidebarItem } from "@/types/sidebar.types";
-import { 
-  FiUsers, 
-  FiUserPlus, 
-  FiSettings, 
+import {
+  FiUsers,
+  FiUserPlus,
+  FiSettings,
   FiBook,
-  FiArchive,
   FiHome,
-  FiPlusCircle,
   FiList,
-  FiPlus
+  FiPlus,
+  FiFile,
+  FiFileText,
+  FiBarChart2,
 } from "react-icons/fi";
 import { ROUTES } from "@/constants/routes.constants";
+import { UserRole } from "@/types/auth.types";
 
 // Define menu items with their permissions
 export const MENU_ITEMS: SidebarItem[] = [
   {
     id: "dashboard",
     label: "Dashboard",
-    route: "/dashboard",
+    route: ROUTES.DASHBOARD.ROOT,
     icon: FiHome,
   },
   {
     id: "manage-users",
     label: "Manage Users",
-    route: "/dashboard/users",
+    route: ROUTES.DASHBOARD.USERS,
     icon: FiUsers,
     permission: ["SUPER_ADMIN", "ADMIN"],
     children: [
       {
         id: "add-admin",
         label: "Add Admin",
-        route: "/dashboard/users/add-admin",
+        route: ROUTES.DASHBOARD.USERS_ADD_ADMIN,
         icon: FiUserPlus,
-        permission: ["SUPER_ADMIN"], // Only super admin can see this
+        permission: ["SUPER_ADMIN"],
       },
       {
         id: "add-faculty",
         label: "Add Faculty",
-        route: "/dashboard/users/add-faculty",
+        route: ROUTES.DASHBOARD.USERS_ADD_FACULTY,
         icon: FiUserPlus,
-        permission: ["ADMIN", "SUPER_ADMIN"] // Both admin and super admin can see this
-      }
-    ]
+        permission: ["ADMIN", "SUPER_ADMIN"],
+      },
+    ],
   },
   {
     id: "course-management",
     label: "Course Management",
-    route: "/dashboard/courses",
+    route: ROUTES.DASHBOARD.COURSES.LIST,
     icon: FiBook,
     permission: ["SUPER_ADMIN", "ADMIN"],
     children: [
       {
         id: "course-list",
         label: "All Courses",
-        route: "/dashboard/courses",
+        route: ROUTES.DASHBOARD.COURSES.LIST,
         icon: FiList,
       },
       {
         id: "add-course",
         label: "Add Course",
-        route: "/dashboard/courses/add",
-        icon: FiPlusCircle,
+        route: ROUTES.DASHBOARD.COURSES.ADD,
+        icon: FiPlus,
+      },
+    ],
+  },
+  {
+    id: "course-files",
+    label: "Course Files",
+    route: ROUTES.COURSE_FILES.ROOT,
+    icon: FiFile,
+    permission: ["SUPER_ADMIN", "ADMIN"],
+    children: [
+      {
+        id: "file-templates",
+        label: "File Templates",
+        route: ROUTES.COURSE_FILES.TEMPLATES,
+        icon: FiFileText,
+      },
+      {
+        id: "templates-stats",
+        label: "Template Stats",
+        route: ROUTES.COURSE_FILES.TEMPLATES_STATS,
+        icon: FiBarChart2,
       },
     ],
   },
   {
     id: "settings",
     label: "Settings",
-    route: "/dashboard/settings",
-    icon: FiSettings
-  }
+    route: "/settings",
+    icon: FiSettings,
+    permission: ["SUPER_ADMIN", "ADMIN"],
+  },
 ];
 
-// Helper function to filter menu items based on user role
-export const filterMenuItemsByRole = (items: SidebarItem[], userRole?: string) => {
-  if (!userRole) return [];
-
+export const filterMenuItemsByRole = (
+  items: SidebarItem[],
+  userRole: UserRole,
+): SidebarItem[] => {
   return items.reduce<SidebarItem[]>((acc, item) => {
     // Check if user has permission for this item
     if (item.permission && !item.permission.includes(userRole)) {
       return acc;
     }
 
-    // If item has children, filter them recursively
+    // Handle children recursively
     if (item.children) {
       const filteredChildren = item.children.filter(
-        child => !child.permission || child.permission.includes(userRole)
+        (child) => !child.permission || child.permission.includes(userRole),
       );
 
       // Only include parent if it has accessible children or no children
       if (filteredChildren.length > 0) {
-        return [...acc, { ...item, children: filteredChildren }];
+        acc.push({
+          ...item,
+          children: filteredChildren,
+        });
       }
-      return acc;
+    } else {
+      acc.push(item);
     }
 
-    return [...acc, item];
+    return acc;
   }, []);
 };
-
-export const MENU_CONFIG: SidebarItem[] = [
-  {
-    title: "Courses",
-    icon: FiBook,
-    children: [
-      {
-        title: "All Courses",
-        path: ROUTES.COURSES,
-        icon: FiList,
-      },
-      {
-        title: "Add Course",
-        path: ROUTES.COURSES_ADD,
-        icon: FiPlus,
-      },
-    ],
-  },
-]; 

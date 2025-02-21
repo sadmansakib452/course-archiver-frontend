@@ -16,8 +16,7 @@ interface SidebarProps {
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   const { theme } = useTheme();
-  const location = usePathname();
-  const { pathname } = usePathname();
+  const pathname = usePathname();
   const { user } = useAuth();
   const [pageName, setPageName] = useState("");
 
@@ -41,7 +40,9 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
   });
 
   // Filter menu items based on user role
-  const filteredMenuItems = filterMenuItemsByRole(MENU_ITEMS, user?.role);
+  const filteredMenuItems = user
+    ? filterMenuItemsByRole(MENU_ITEMS, user.role)
+    : [];
 
   return (
     <aside

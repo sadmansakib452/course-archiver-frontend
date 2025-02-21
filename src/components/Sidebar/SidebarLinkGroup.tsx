@@ -13,6 +13,10 @@ const SidebarLinkGroup = ({
   const [open, setOpen] = useState<boolean>(activeCondition);
 
   const handleClick = () => {
+    console.log('SidebarLinkGroup handleClick:', {
+      currentOpen: open,
+      willBe: !open
+    });
     setOpen(!open);
   };
 

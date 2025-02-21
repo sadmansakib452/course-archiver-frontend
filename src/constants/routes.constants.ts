@@ -7,6 +7,7 @@ export const ROUTES = {
   },
   DASHBOARD: {
     ROOT: "/dashboard",
+    HOME: "/dashboard",
     PROFILE: "/dashboard/profile",
     USERS: "/dashboard/users",
     USERS_ADD_ADMIN: "/dashboard/users/add-admin",
@@ -19,4 +20,10 @@ export const ROUTES = {
   },
   COURSES: "/dashboard/courses",
   COURSES_ADD: "/dashboard/courses/add",
+  COURSE_FILES: {
+    ROOT: "/dashboard/course-files",
+    TEMPLATES: "/dashboard/course-files/templates",
+    TEMPLATES_ADD: "/dashboard/course-files/templates/add",
+    TEMPLATES_STATS: "/dashboard/course-files/templates-stats",
+  },
 } as const; 
