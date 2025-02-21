@@ -1,3 +1,6 @@
+// Add import at the top
+import { Faculty } from "@/types/faculty.types";
+
 // Course-related enums
 export enum CourseSemester {
   FALL = "FALL",
@@ -121,4 +124,89 @@ export interface PaginationState {
   page: number;
   limit: number;
   pages: number;
+}
+
+// New type for course update
+export interface UpdateCourseInput {
+  code?: string;
+  name?: string;
+  section?: number;
+  semester?: CourseSemester;
+  year?: number;
+  facultyId?: string | null;
+}
+
+// Response type for course update
+export interface UpdateCourseResponse {
+  success: boolean;
+  message: string;
+  data: Course;
+}
+
+// Add modal props type
+export interface EditCourseModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: (data: UpdateCourseInput) => Promise<void>;
+  course: Course;
+  isLoading: boolean;
+}
+
+// Add loading action type to existing types
+export type CourseActionType =
+  | "deactivate"
+  | "delete"
+  | "restore"
+  | "update"
+  | "assign"
+  | "create";
+
+// Update existing loading state type if exists, or add new
+export interface CourseLoadingState {
+  [key: string]: {
+    type: CourseActionType;
+    courseId: string;
+  };
+}
+
+// Add CreateCourse related types
+export interface CreateCourseInput {
+  code: string;
+  name: string;
+  section: number;
+  semester: CourseSemester;
+  year: number;
+  facultyId?: string | null;
+}
+
+// Response type for course creation
+export interface CreateCourseResponse {
+  success: boolean;
+  message: string;
+  data: Course | null;
+}
+
+// Add modal props type (following EditCourseModalProps pattern)
+export interface AddCourseModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (data: CreateCourseInput) => Promise<void>;
+  isLoading: boolean;
+}
+
+// Add validation types for course creation
+export interface CourseValidationErrors {
+  code?: string;
+  name?: string;
+  section?: string;
+  semester?: string;
+  year?: string;
+  facultyId?: string;
+}
+
+// Add API Error type
+export interface ApiError {
+  success: boolean;
+  message: string;
+  data?: any;
 }

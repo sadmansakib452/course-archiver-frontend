@@ -6,6 +6,10 @@ import {
   CourseFilters,
   CourseTableSort,
   CoursePagination,
+  UpdateCourseInput,
+  UpdateCourseResponse,
+  CreateCourseInput,
+  CreateCourseResponse,
 } from "@/types/course.types";
 
 interface DeleteResponse {
@@ -154,6 +158,49 @@ class CourseService {
       throw new Error(
         error.response?.data?.message || "Failed to fetch course",
       );
+    }
+  }
+
+  async updateCourse(
+    courseId: string,
+    data: UpdateCourseInput,
+  ): Promise<UpdateCourseResponse> {
+    try {
+      console.log("CourseService: Updating course:", { courseId, data });
+      const response = await axiosInstance.patch<UpdateCourseResponse>(
+        API_CONFIG.endpoints.courses.update(courseId),
+        data,
+      );
+      console.log("CourseService: Update response:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("CourseService: Update failed:", error);
+      throw new Error(
+        error.response?.data?.message || "Failed to update course",
+      );
+    }
+  }
+
+  async createCourse(data: CreateCourseInput): Promise<CreateCourseResponse> {
+    try {
+      console.log("CourseService: Creating course:", data);
+      const response = await axiosInstance.post<CreateCourseResponse>(
+        API_CONFIG.endpoints.courses.create,
+        data,
+      );
+      console.log("CourseService: Create response:", response.data);
+
+      // If API returns error message
+      if (!response.data.success) {
+        throw new Error(response.data.message);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error("CourseService: Create failed:", error);
+      // Handle both API error and network error
+      const errorMessage = error.response?.data?.message || error.message;
+      throw new Error(errorMessage);
     }
   }
 }

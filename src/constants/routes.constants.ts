@@ -17,4 +17,6 @@ export const ROUTES = {
       EDIT: (id: string) => `/dashboard/courses/${id}/edit`,
     },
   },
+  COURSES: "/dashboard/courses",
+  COURSES_ADD: "/dashboard/courses/add",
 } as const; 

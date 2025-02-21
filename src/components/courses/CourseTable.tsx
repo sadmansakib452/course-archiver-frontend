@@ -1,6 +1,6 @@
 "use client";
 import { Course, COURSE_TABLE_COLUMNS } from "@/types/course.types";
-import { FiEdit2, FiUserPlus, FiTrash2, FiRefreshCw } from "react-icons/fi";
+import { FiEdit2, FiUserPlus, FiTrash2, FiRefreshCw, FiLoader } from "react-icons/fi";
 
 interface CourseTableProps {
   isLoading: boolean;
@@ -8,9 +8,10 @@ interface CourseTableProps {
   onDelete: (course: Course) => void;
   onRestore: (course: Course) => void;
   onAssign: (course: Course) => void;
+  onEdit: (course: Course) => void;
   actionLoading: {
     [key: string]: {
-      type: "deactivate" | "delete" | "restore";
+      type: "deactivate" | "delete" | "restore" | "update" | "assign";
       courseId: string;
     };
   };
@@ -22,6 +23,7 @@ export default function CourseTable({
   onDelete,
   onRestore,
   onAssign,
+  onEdit,
   actionLoading,
 }: CourseTableProps) {
   // Define renderTableRow before using it
@@ -104,8 +106,17 @@ export default function CourseTable({
               <FiRefreshCw className="h-4 w-4 text-success/70 group-hover:text-success" />
             </button>
           )}
-          <button className="group relative rounded-lg p-2 hover:bg-primary/10">
-            <FiEdit2 className="h-4 w-4 text-primary/70 group-hover:text-primary" />
+          <button
+            onClick={() => onEdit(course)}
+            disabled={!!actionLoading[`update-${course.id}`]}
+            className="text-primary hover:text-primary/80 disabled:opacity-50"
+            title="Edit Course"
+          >
+            {actionLoading[`update-${course.id}`]?.type === 'update' ? (
+              <FiLoader className="h-5 w-5 animate-spin" />
+            ) : (
+              <FiEdit2 className="h-5 w-5" />
+            )}
           </button>
           <button
             className="group relative rounded-lg p-2 hover:bg-primary/10"

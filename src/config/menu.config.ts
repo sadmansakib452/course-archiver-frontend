@@ -7,8 +7,10 @@ import {
   FiArchive,
   FiHome,
   FiPlusCircle,
-  FiList
+  FiList,
+  FiPlus
 } from "react-icons/fi";
+import { ROUTES } from "@/constants/routes.constants";
 
 // Define menu items with their permissions
 export const MENU_ITEMS: SidebarItem[] = [
@@ -95,4 +97,23 @@ export const filterMenuItemsByRole = (items: SidebarItem[], userRole?: string) =
 
     return [...acc, item];
   }, []);
-}; 
+};
+
+export const MENU_CONFIG: SidebarItem[] = [
+  {
+    title: "Courses",
+    icon: FiBook,
+    children: [
+      {
+        title: "All Courses",
+        path: ROUTES.COURSES,
+        icon: FiList,
+      },
+      {
+        title: "Add Course",
+        path: ROUTES.COURSES_ADD,
+        icon: FiPlus,
+      },
+    ],
+  },
+]; 

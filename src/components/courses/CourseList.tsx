@@ -2,16 +2,18 @@
 import { useState } from "react";
 import { useCourseStore } from "@/store/course.store";
 import { Course, COURSE_TABLE_COLUMNS, CourseFilters } from "@/types/course.types";
-import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight, FiTrash2, FiRefreshCw } from "react-icons/fi";
+import { FiEdit2, FiUserPlus, FiToggleLeft, FiToggleRight, FiTrash2, FiRefreshCw, FiPlus } from "react-icons/fi";
 import { toast } from "react-hot-toast";
 import AssignFacultyModal from "./AssignFacultyModal";
 import DeleteCourseModal from "./DeleteCourseModal";
 import FilterBar from "./filters/FilterBar";
 import CourseTable from "./CourseTable";
+import EditCourseModal from "./EditCourseModal";
+import AddCourseModal from "./AddCourseModal";
 
 // Add specific loading state types
 interface ActionLoadingState {
-  type: 'deactivate' | 'delete' | 'restore' | 'assign';
+  type: 'deactivate' | 'delete' | 'restore' | 'assign' | 'update';
   courseId: string;
 }
 
@@ -27,7 +29,9 @@ export default function CourseList() {
     deactivateCourse,
     deleteCoursePermantly,
     restoreCourse,
-    refreshCourses
+    refreshCourses,
+    updateCourse,
+    createCourse
   } = useCourseStore();
 
   const [actionLoading, setActionLoading] = useState<{
@@ -36,6 +40,8 @@ export default function CourseList() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Handle status toggle
   const handleStatusToggle = async (courseId: string) => {
@@ -177,6 +183,49 @@ export default function CourseList() {
     }
   };
 
+  const handleEdit = (course: Course) => {
+    setSelectedCourse(course);
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async (data: UpdateCourseInput) => {
+    if (!selectedCourse) return;
+    
+    try {
+      setActionLoading(prev => ({
+        ...prev,
+        [`update-${selectedCourse.id}`]: {
+          type: 'update',
+          courseId: selectedCourse.id
+        }
+      }));
+
+      await updateCourse(selectedCourse.id, data);
+      toast.success("Course updated successfully");
+      setIsEditModalOpen(false);
+      setSelectedCourse(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update course");
+    } finally {
+      setActionLoading(prev => {
+        const newState = { ...prev };
+        delete newState[`update-${selectedCourse.id}`];
+        return newState;
+      });
+    }
+  };
+
+  // Add new handler for course creation
+  const handleCreate = async (data: CreateCourseInput) => {
+    try {
+      await createCourse(data);
+      toast.success("Course created successfully");
+      setIsAddModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create course");
+    }
+  };
+
   if (error) {
     return (
       <div className="flex items-center justify-center py-10">
@@ -200,6 +249,15 @@ export default function CourseList() {
             Manage your courses, assign faculty, and track course status
           </p>
         </div>
+        
+        {/* Add Course Button */}
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90"
+        >
+          <FiPlus className="h-5 w-5" />
+          Add Course
+        </button>
       </div>
 
       {/* Quick Stats with scale animation */}
@@ -246,6 +304,7 @@ export default function CourseList() {
         onDelete={handleDelete}
         onRestore={handleRestoreCourse}
         onAssign={openAssignModal}
+        onEdit={handleEdit}
         actionLoading={actionLoading}
       />
 
@@ -273,6 +332,27 @@ export default function CourseList() {
         loadingAction={
           actionLoading[`delete-${selectedCourse?.id}`]?.type || null
         }
+      />
+
+      {selectedCourse && (
+        <EditCourseModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedCourse(null);
+          }}
+          onUpdate={handleUpdate}
+          course={selectedCourse}
+          isLoading={!!actionLoading[`update-${selectedCourse.id}`]}
+        />
+      )}
+
+      {/* Add Course Modal */}
+      <AddCourseModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onCreate={handleCreate}
+        isLoading={!!actionLoading.create}
       />
     </div>
   );

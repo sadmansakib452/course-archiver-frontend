@@ -7,6 +7,12 @@ import {
   CourseApiResponse,
   CourseSearchState,
   PaginationState,
+  UpdateCourseInput,
+  UpdateCourseResponse,
+  CourseLoadingState,
+  CourseActionType,
+  CreateCourseInput,
+  CreateCourseResponse,
 } from "@/types/course.types";
 import { courseService } from "@/services/course.service";
 import { debounce } from "lodash";
@@ -23,6 +29,10 @@ interface CourseState {
     table: boolean;
     filters: boolean;
     actions: boolean;
+    update: boolean;
+  };
+  actionLoading: {
+    [key: string]: { type: CourseActionType; courseId: string } | null;
   };
 }
 
@@ -48,6 +58,8 @@ interface CourseActions {
   setTableLoading: (loading: boolean) => void;
   setFilterLoading: (loading: boolean) => void;
   setActionLoading: (loading: boolean) => void;
+  updateCourse: (courseId: string, data: UpdateCourseInput) => Promise<void>;
+  createCourse: (data: CreateCourseInput) => Promise<void>;
 }
 
 const initialState: CourseState = {
@@ -73,7 +85,9 @@ const initialState: CourseState = {
     table: false,
     filters: false,
     actions: false,
+    update: false,
   },
+  actionLoading: {},
 };
 
 // Update the type for set and get
@@ -154,27 +168,43 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
     toggleCourseStatus: async (courseId: string) => {
       try {
-        set({ isLoading: true, error: null });
+        set((state) => ({
+          ...state,
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: { type: "deactivate", courseId },
+          },
+        }));
+
         const response = await courseService.toggleCourseStatus(courseId);
 
-        // Update the course in the state
-        const courses = get().courses.map((course) =>
-          course.id === courseId ? response.data.courses[0] : course,
-        );
-
-        set({ courses });
+        set((state) => ({
+          ...state,
+          courses: state.courses.map((course) =>
+            course.id === courseId ? response.data.courses[0] : course,
+          ),
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: null,
+          },
+        }));
       } catch (error: any) {
-        set({ error: error.message });
-        console.error("Failed to toggle course status:", error);
+        set((state) => ({
+          ...state,
+          error: error.message,
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: null,
+          },
+        }));
         throw error;
-      } finally {
-        set({ isLoading: false });
       }
     },
 
     assignFaculty: async (courseId: string, facultyId: string) => {
       try {
         set((state) => ({
+          ...state,
           loading: {
             ...state.loading,
             actions: true,
@@ -183,14 +213,15 @@ export const useCourseStore = create<CourseState & CourseActions>(
 
         const response = await courseService.assignFaculty(courseId, facultyId);
 
-        // Optimistic update - update the course in state immediately
+        // Fix type issues in state update
         set((state) => ({
+          ...state,
           courses: state.courses.map((course) =>
             course.id === courseId
               ? {
                   ...course,
-                  faculty: response.data.faculty,
-                  facultyId: response.data.facultyId,
+                  faculty: response.data.faculty || null,
+                  facultyId: response.data.facultyId || null,
                 }
               : course,
           ),
@@ -199,10 +230,9 @@ export const useCourseStore = create<CourseState & CourseActions>(
             actions: false,
           },
         }));
-
-        return response;
       } catch (error: any) {
         set((state) => ({
+          ...state,
           error: error.message,
           loading: {
             ...state.loading,
@@ -400,5 +430,98 @@ export const useCourseStore = create<CourseState & CourseActions>(
           actions: loading,
         },
       })),
+
+    updateCourse: async (courseId: string, data: UpdateCourseInput) => {
+      try {
+        // Set loading state
+        set((state) => ({
+          ...state,
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: { type: "update", courseId },
+          },
+        }));
+
+        // Make API call
+        const response = await courseService.updateCourse(courseId, data);
+
+        // Update the course in state
+        set((state) => ({
+          ...state,
+          courses: state.courses.map((course) =>
+            course.id === courseId ? response.data : course,
+          ),
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: null,
+          },
+        }));
+      } catch (error: any) {
+        // Handle error
+        set((state) => ({
+          ...state,
+          error: error.message,
+          actionLoading: {
+            ...state.actionLoading,
+            [courseId]: null,
+          },
+        }));
+        throw error;
+      }
+    },
+
+    createCourse: async (data: CreateCourseInput) => {
+      try {
+        // Set loading state
+        set((state) => ({
+          ...state,
+          loading: {
+            ...state.loading,
+            actions: true,
+          },
+          actionLoading: {
+            ...state.actionLoading,
+            create: { type: "create", courseId: "new" },
+          },
+        }));
+
+        // Make API call
+        const response = await courseService.createCourse(data);
+
+        // Verify response data exists
+        if (!response.data) {
+          throw new Error("Invalid response from server");
+        }
+
+        // Update courses list with new course
+        set((state) => ({
+          ...state,
+          courses: [response.data!, ...state.courses], // We know data exists here
+          loading: {
+            ...state.loading,
+            actions: false,
+          },
+          actionLoading: {
+            ...state.actionLoading,
+            create: null,
+          },
+        }));
+      } catch (error: any) {
+        // Handle error
+        set((state) => ({
+          ...state,
+          error: error.message,
+          loading: {
+            ...state.loading,
+            actions: false,
+          },
+          actionLoading: {
+            ...state.actionLoading,
+            create: null,
+          },
+        }));
+        throw error; // Re-throw for component handling
+      }
+    },
   }),
 );
